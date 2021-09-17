@@ -58,8 +58,3 @@ def hohmann(r1, r2, mu):
     dv2 = vf - vta
 
     return dv1, dv2
-
-# print(vis_viva(cons.re + 100000, cons.re + 500000, cons.mu))
-
-print(hohmann(590000 + cons.re, 650000 + cons.re, cons.mu))
-
