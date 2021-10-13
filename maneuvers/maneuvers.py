@@ -1,11 +1,38 @@
 import numpy as np
-import math
-import time
-import pyOrbital.constants as cons
+
+
+def vis_viva(r1, r2, mu):
+    """ Find velocity at apses of an orbit
+        :param r1: first apsis radius
+        :param r2: second apsis radius
+        :param mu: parent body gravitational parameter
+
+        :return v1: first apsis velocity
+        :return v2: second apsis velocity
+    """
+
+    a = (r1 + r2)/2
+    v1 = np.sqrt(mu*(2/r1 - 1/a))
+    v2 = np.sqrt(mu*(2/r2 - 1/a))
+
+    return v1, v2
+
+
+def vis_viva_v(r, v, mu):
+    """ Function to find the radius of the opposite apsis of an orbit from apsis radius and velocity
+        :param r: radius of one apsis
+        :param v: velocity of one apsis
+        :param mu: parent body gravitational parameter
+
+        :return r2: radius of opposite apsis
+    """
+
+    r2 = (-(v**2/mu - 2/r))**(-1)
+    return r2
 
 
 def plane_change(v1, di, v2=None):
-    """ Function to calculate Delta-V for a simple plane change maneuver
+    """ Function to calculate Delta-V for a plane change maneuver
         :param v1: initial vehicle velocity
         :param di: inclination change or velocity vector direction change
         :param v2: final vehicle velocity
@@ -20,23 +47,6 @@ def plane_change(v1, di, v2=None):
     return abs(dv)
 
 
-def vis_viva(ra, rp, mu):
-    """ Find velocity at apses of an orbit
-        :param ra: apoapsis velocity
-        :param rp: periapsis velocity
-        :param mu: planet gravitational parameter
-
-        :return va: apoapsis velocity
-        :return vp: periapsis velocity
-    """
-
-    a = (ra + rp)/2
-    va = np.sqrt(mu*(2/ra - 1/a))
-    vp = np.sqrt(mu*(2/rp - 1/a))
-
-    return va, vp
-
-
 def hohmann(r1, r2, mu):
     """ Function to perform a Hohmann transfer between two circular orbits
         :param r1: radius of first orbit
@@ -44,17 +54,40 @@ def hohmann(r1, r2, mu):
         :param mu: planet gravitational parameter
         :return dv1: delta-v of first burn
         :return dv2: delta-v of second burn
+        :return T: period of the transfer orbit
 
         negative delta-v indicates the spacecraft must slow down (retrograde propulsion) to complete the transfer
     """
 
-    vi = np.sqrt(mu/r1)
-    vf = np.sqrt(mu/r2)
-    a = (r1 + r2)/2
-    vtp = np.sqrt(mu*(2/r1 - 1/a))
-    vta = np.sqrt(mu*(2/r2 - 1/a))
+    v1 = np.sqrt(mu/r1)
+    v2 = np.sqrt(mu/r2)
 
-    dv1 = vtp - vi
-    dv2 = vf - vta
+    vt1, vt2 = vis_viva(r1, r2, mu)
 
-    return dv1, dv2
+    dv1 = (vt1 - v1)
+    dv2 = (v2 - vt2)
+
+    T = 2*np.pi*np.sqrt(((r1+r2)/2)**3 / mu)
+
+    return dv1, dv2, T
+
+
+def impulsive_maneuver(ra, rp, dv, mu, pe=True):
+    """ Function to calculate change in apses after an impulsive tangential maneuver
+        :param ra: initial apoapsis radius
+        :param rp: initial periapsis radius
+        :param dv: burn delta-v
+        :param mu: parent body gravitational parameter
+        :param pe: true if boosting at periapsis
+    """
+
+    vp, va = vis_viva(ra, rp, mu)
+
+    if pe is True :
+        vp += dv
+        ra = vis_viva_v(rp, vp, mu)
+    else:
+        va += dv
+        rp = vis_viva_v(ra, va, mu)
+
+    return ra, rp
