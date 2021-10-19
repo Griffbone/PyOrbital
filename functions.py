@@ -98,28 +98,6 @@ def kepler_ta(e, ma):
     return TA[0]
 
 
-def rot_orbit(omega, i, w, xs, ys, zs):
-    Z1 = rotmat(omega, 'z')
-    X1 = rotmat(i, 'x')
-    Z2 = rotmat(w, 'z')
-
-    R = Z1 @ X1 @ Z2
-
-    # rotate orbit in IJK space using rotation matrix
-    xps = []
-    yps = []
-    zps = []
-
-    for x,y,z in zip(xs, ys, zs):
-        vnew = R@np.array([x, y, z])
-
-        xps.append(vnew[0])
-        yps.append(vnew[1])
-        zps.append(vnew[2])
-
-    return xps, yps, zps
-
-
 def vector_to_elements(r, vel, mu):
     h = np.cross(r, vel)
     evec = np.cross(vel, h)/mu - r/np.linalg.norm(r)

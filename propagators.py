@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.optimize import fsolve
 from scipy.integrate import solve_ivp
 import constants as cons
 import functions as func
@@ -22,23 +21,28 @@ def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False):
 
     ts = np.linspace(0, dt, n)
     n = np.sqrt(cons.mu/a**3)
-    mas = n*ts + ta
 
     xs = []
     ys = []
     zs = []
 
-    landot = (-3/2)*cons.j2*(cons.re/(a*(1 - e**2)))**2*np.sqrt(cons.mu/a**3)*np.cos(np.radians(i))
+    landot = -1.5*cons.j2 * (cons.re/(a*(1 - e**2)))**2 * np.sqrt(cons.mu/a**3) * np.cos(np.radians(i))
     wdot = (3/4)*n*cons.j2*(cons.re/a)**2*(4 - 5*np.sin(np.radians(i)))/(1 - e**2)**2
+
+    landot = np.degrees(landot)
+    wdot = np.degrees(wdot)
 
     if j2 is False:
         landot = 0
         wdot = 0
 
+    lan0 = lan
+    w0 = w
+
     for t in ts:
         ma = n*t
-        lan = lan + landot*t
-        wdot = w + wdot*t
+        lan = lan0 + landot*t
+        w = w0 + wdot*t
 
         ta = func.kepler_ta(e, ma)
         r = a*(1 - e**2)/(1 + e*np.cos(ta))
@@ -46,13 +50,13 @@ def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False):
         x = r*np.cos(ta)
         y = r*np.sin(ta)
 
-        x, y, z = func.perifocal_to_eci(lan, i, w, x, y)
+        xp, yp, zp = func.perifocal_to_eci(lan, i, w, x, y)
 
-        xs.append(x)
-        ys.append(y)
-        zs.append(z)
+        xs.append(xp)
+        ys.append(yp)
+        zs.append(zp)
 
-    return np.array(xs), np.array(ys), np.array(zs)
+    return ts, np.array(xs), np.array(ys), np.array(zs)
 
 
 def twobody_propagation(r, v, dt, n=1000, step=1e3):
