@@ -7,15 +7,17 @@ def vis_viva(r1, r2, mu):
         :param r2: second apsis radius
         :param mu: parent body gravitational parameter
 
-        :return v1: first apsis velocity
-        :return v2: second apsis velocity
+        :return r1: first apse radius
+        :return v1: first apse velocity
+        :return r2: second apse radius
+        :return v2: second apse velocity
     """
 
     a = (r1 + r2)/2
     v1 = np.sqrt(mu*(2/r1 - 1/a))
     v2 = np.sqrt(mu*(2/r2 - 1/a))
 
-    return v1, v2
+    return r1, v1, r2, v2
 
 
 def vis_viva_v(r, v, mu):
@@ -27,8 +29,11 @@ def vis_viva_v(r, v, mu):
         :return r2: radius of opposite apsis
     """
 
-    r2 = (-(v**2/mu - 2/r))**(-1)
-    return r2
+    a = (2/r - v**2/mu)**(-1)
+    r2 = 2*a - r
+    v2 = (r*v)/r2
+
+    return r, v, r2, v2
 
 
 def plane_change(v1, di, v2=None):
@@ -42,7 +47,8 @@ def plane_change(v1, di, v2=None):
     if v2 is None:
         dv = 2*v1*np.sin(di/2)
     else:
-        dv = np.sqrt(2*v1**2*(1 - np.cos(di)))
+        # dv = np.sqrt(2*v1**2*(1 - np.cos(di)))
+        dv = np.sqrt(v2**2 + v1**2 - 2*v2*v1*np.cos(di))
 
     return abs(dv)
 
@@ -59,13 +65,13 @@ def hohmann(r1, r2, mu):
         negative delta-v indicates the spacecraft must slow down (retrograde propulsion) to complete the transfer
     """
 
-    v1 = np.sqrt(mu/r1)
-    v2 = np.sqrt(mu/r2)
+    vc1 = np.sqrt(mu/r1)
+    vc2 = np.sqrt(mu/r2)
 
-    vt1, vt2 = vis_viva(r1, r2, mu)
+    _, vt1, _, vt2 = vis_viva(r1, r2, mu)
 
-    dv1 = (vt1 - v1)
-    dv2 = (v2 - vt2)
+    dv1 = (vt1 - vc1)
+    dv2 = (vc2 - vt2)
 
     T = 2*np.pi*np.sqrt(((r1+r2)/2)**3 / mu)
 
