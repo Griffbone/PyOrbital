@@ -1,5 +1,5 @@
 import numpy as np
-import pyOrbital.constants as cn
+import constants as cn
 
 
 class MajorBody:

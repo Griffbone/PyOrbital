@@ -2,37 +2,13 @@ import numpy as np
 from scipy.optimize import fsolve
 from scipy.integrate import solve_ivp
 import constants as cons
-import matplotlib.pyplot as plt
 import functions as func
 
 # STK propagators: https://help.agi.com/stk/index.htm#stk/vehSat_orbitProp_choose.htm
 # IITB propagators: https://www.aero.iitb.ac.in/satelliteWiki/index.php/Orbit_Propagator
 
 
-def kepler_ta(e, ma):
-    """ Solve Kepler's equation for Eccentric anomaly and True Anomaly
-        :param e: eccentricity
-        :param ma: mean anomaly
-        :return TA: true anomaly
-    """
-
-    E = fsolve(lambda E: E - e*np.sin(E) - ma, np.array([0]))
-
-    if len(E) > 1:
-        E = E[0]
-
-    TA = np.arctan(np.sqrt((1 + e)/(1 - e))*np.tan(E/2))*2
-
-    while TA < 0:
-        TA += np.pi*2
-
-    while TA > 2*np.pi:
-        TA -= 2*np.pi
-
-    return TA[0]
-
-
-def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000):
+def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False):
     """ Function to propagate an orbit using Kepler's equation
         :param a: semimajor axis (m)
         :param e: eccentricity
@@ -46,14 +22,37 @@ def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000):
 
     ts = np.linspace(0, dt, n)
     n = np.sqrt(cons.mu/a**3)
-    mas = n*ts
+    mas = n*ts + ta
 
-    tas = []
+    xs = []
+    ys = []
+    zs = []
 
-    for ma in mas:
-        tas.append(kepler_ta(e, ma))
+    landot = (-3/2)*cons.j2*(cons.re/(a*(1 - e**2)))**2*np.sqrt(cons.mu/a**3)*np.cos(np.radians(i))
+    wdot = (3/4)*n*cons.j2*(cons.re/a)**2*(4 - 5*np.sin(np.radians(i)))/(1 - e**2)**2
 
-    return tas
+    if j2 is False:
+        landot = 0
+        wdot = 0
+
+    for t in ts:
+        ma = n*t
+        lan = lan + landot*t
+        wdot = w + wdot*t
+
+        ta = func.kepler_ta(e, ma)
+        r = a*(1 - e**2)/(1 + e*np.cos(ta))
+
+        x = r*np.cos(ta)
+        y = r*np.sin(ta)
+
+        x, y, z = func.perifocal_to_eci(lan, i, w, x, y)
+
+        xs.append(x)
+        ys.append(y)
+        zs.append(z)
+
+    return np.array(xs), np.array(ys), np.array(zs)
 
 
 def twobody_propagation(r, v, dt, n=1000, step=1e3):
