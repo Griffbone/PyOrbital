@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import RK45, solve_ivp, solve_bvp
-import pyOrbital.functions as func
-import pyOrbital.constants as const
+from scipy.integrate import solve_ivp
+import constants as const
 
 
 def plot_planet(r):

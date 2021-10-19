@@ -1,5 +1,5 @@
-from pyOrbital import constants as cons
-from numpy import sin, cos, sqrt
+import constants as cons
+from numpy import sin, cos
 
 
 def thrust(t):

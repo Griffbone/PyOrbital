@@ -2,7 +2,6 @@ import numpy as np
 from scipy.optimize import fsolve
 from scipy.integrate import solve_ivp
 import constants as cons
-import matplotlib.pyplot as plt
 import functions as func
 
 # STK propagators: https://help.agi.com/stk/index.htm#stk/vehSat_orbitProp_choose.htm

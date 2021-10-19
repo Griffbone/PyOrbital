@@ -1,10 +1,8 @@
-import scipy as sp
 import numpy as np
 import scipy.integrate
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
-import pyOrbital.functions as fncs
-import pyOrbital.constants as cons
+import constants as cons
 
 global g, re, T
 g = 9.80665

@@ -1,4 +1,4 @@
-from pyOrbital.constants import j2000
+from constants import j2000
 import numpy as np
 
 
