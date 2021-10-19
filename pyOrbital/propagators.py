@@ -9,21 +9,51 @@ import functions as func
 # IITB propagators: https://www.aero.iitb.ac.in/satelliteWiki/index.php/Orbit_Propagator
 
 
-def kepler_ea(e, ma):
-    """Solve Kepler's equation for Eccentric anomaly
+def kepler_ta(e, ma):
+    """ Solve Kepler's equation for Eccentric anomaly and True Anomaly
         :param e: eccentricity
         :param ma: mean anomaly
-        :return E: eccentric anomaly
+        :return TA: true anomaly
     """
 
-    if (e < 0) or (e > 1):
-        print('ERROR: eccentricty must be below one')
-        return None
-    elif (ma < 0) or (ma > np.pi):
-        print('ERROR: mean anomaly must be below one')
-        return None
+    E = fsolve(lambda E: E - e*np.sin(E) - ma, np.array([0]))
 
-    return fsolve(lambda E: E - e*np.sin(E) - ma, np.array([0]))
+    if len(E) > 1:
+        E = E[0]
+
+    TA = np.arctan(np.sqrt((1 + e)/(1 - e))*np.tan(E/2))*2
+
+    while TA < 0:
+        TA += np.pi*2
+
+    while TA > 2*np.pi:
+        TA -= 2*np.pi
+
+    return TA[0]
+
+
+def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000):
+    """ Function to propagate an orbit using Kepler's equation
+        :param a: semimajor axis (m)
+        :param e: eccentricity
+        :param i: inclination  (deg)
+        :param lan: longitude of ascending node (deg)
+        :param w: argument of periapsis (deg)
+        :param ta: true anomaly
+        :param dt: final time (s)
+
+    """
+
+    ts = np.linspace(0, dt, n)
+    n = np.sqrt(cons.mu/a**3)
+    mas = n*ts
+
+    tas = []
+
+    for ma in mas:
+        tas.append(kepler_ta(e, ma))
+
+    return tas
 
 
 def twobody_propagation(r, v, dt, n=1000, step=1e3):
