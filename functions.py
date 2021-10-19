@@ -53,7 +53,7 @@ def perifocal_coords(a, e, thetas=np.linspace(0, 2*np.pi, 100)):
     return rs, thetas, xs, ys
 
 
-def perifocal_to_eci(omega, i, w, r):
+def perifocal_to_eci(omega, i, w, x, y):
     """" Function to transform perifocal position vector to ECI position vector
         :param omega: right ascension of ascending node (deg)
         :param i: inclination (deg)
@@ -67,27 +67,22 @@ def perifocal_to_eci(omega, i, w, r):
     X1 = rotmat(np.radians(i), 'x')
     Z2 = rotmat(np.radians(w), 'z')
 
+    r = np.array([x, y, 0])
+
     R = Z1 @ X1 @ Z2
     r_eci = R @ r
 
-    return r_eci
+    return r_eci[0], r_eci[1], r_eci[2]
 
 
-def get_ta(a, e, mu, t0, t):
-    """ Function to get true anomaly from orbital elements and time
-        :param a: semimajor axis (m)
+def kepler_ta(e, ma):
+    """ Solve Kepler's equation for Eccentric anomaly and True Anomaly
         :param e: eccentricity
-        :param mu: gravitational parameter
-        :param t0: time of periapsis passage (JD)
-        :param t: current time (JD)
+        :param ma: mean anomaly
+        :return TA: true anomaly
     """
 
-    T = 2*np.pi*np.sqrt(a**3/mu)
-    t = (t - t0)*24*60*60
-
-    n = 2*np.pi/T
-    M = n*t
-    E = fsolve(lambda E: E - e*np.sin(E) - M, np.array([M]))
+    E = fsolve(lambda E: E - e*np.sin(E) - ma, np.array([0]))
 
     if len(E) > 1:
         E = E[0]
