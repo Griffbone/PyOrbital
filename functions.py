@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import fsolve
-
+import astrotime as at
 
 def rotmat(t, axis):
     """Function to create a rotation matrix about an axis
@@ -75,27 +75,69 @@ def perifocal_to_eci(omega, i, w, x, y):
     return r_eci[0], r_eci[1], r_eci[2]
 
 
+def elements_to_vector(a, e, i, lan, w, ta):
+    """ Function to calculate ECI state vector from orbital elements
+        :param a: semimajor axis (m)
+        :param e: eccentricity
+        :param i: inclination (deg)
+        :param lan: longnitude of ascending node (deg)
+        :param w: argument of periapsis
+        :param ta: true anomaly (deg)
+
+        :return x: x component of state vector
+        :return y: y component of state vector
+        :return z: z component of state vector
+    """
+
+    p = (a * np.sqrt(1 - e ** 2)) ** 2 / a
+    r = p / (1 + e * np.cos(np.radians(ta)))
+
+    x = r*np.cos(np.radians(ta))
+    y = r*np.sin(np.radians(ta))
+
+    x, y, z = perifocal_to_eci(lan, i, w, x, y)
+
+    return x, y, z
+
+
 def kepler_ta(e, ma):
     """ Solve Kepler's equation for Eccentric anomaly and True Anomaly
         :param e: eccentricity
-        :param ma: mean anomaly
-        :return TA: true anomaly
+        :param ma: mean anomaly (deg)
+
+        :return TA: true anomaly (deg)
     """
+
+    ma = np.radians(ma)
 
     E = fsolve(lambda E: E - e*np.sin(E) - ma, np.array([0]))
 
     if len(E) > 1:
         E = E[0]
 
-    TA = np.arctan(np.sqrt((1 + e)/(1 - e))*np.tan(E/2))*2
-
-    while TA < 0:
-        TA += np.pi*2
-
-    while TA > 2*np.pi:
-        TA -= 2*np.pi
+    TA = np.degrees(2*np.arctan(np.sqrt((1+e)/(1-e))*np.tan(E/2))) % 360
 
     return TA[0]
+
+
+def eci_to_ll(x, y, z, jdn, ut):
+    """ Function to convert ECI coordinates to lat/lon
+        :param x: ECI x position (m)
+        :param y: ECI y position (m)
+        :param z: ECI z position (m)
+        :param jdn: julian day number
+        :param ut: universal time
+
+        :return phi: latitude
+        :return lam: longitude
+    """
+
+    r = np.sqrt(x**2 + y**2 + z**2)
+    phi = np.arcsin(z/r)
+
+    lam = (np.degrees(np.arctan2(y, x)) - at.theta_g(jdn, ut)) % 360
+
+    return np.degrees(phi), lam
 
 
 def vector_to_elements(r, vel, mu):
