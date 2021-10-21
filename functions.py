@@ -2,6 +2,22 @@ import numpy as np
 from scipy.optimize import fsolve
 import astrotime as at
 
+
+def wrap_to_360(theta):
+    """ Function to wrap an angle to [0, 360]
+        :param theta: some angle (deg)
+        :return theta: wrapped angle
+    """
+
+    while theta > 360:
+        theta -= 360
+
+    while theta < 0:
+        theta += 360
+
+    return theta
+
+
 def rotmat(t, axis):
     """Function to create a rotation matrix about an axis
         :param t: angular displacement in RADIANS
@@ -115,7 +131,8 @@ def kepler_ta(e, ma):
     if len(E) > 1:
         E = E[0]
 
-    TA = np.degrees(2*np.arctan(np.sqrt((1+e)/(1-e))*np.tan(E/2))) % 360
+    TA = np.degrees(2*np.arctan(np.sqrt((1+e)/(1-e))*np.tan(E/2)))
+    TA = wrap_to_360(TA)
 
     return TA[0]
 
@@ -134,9 +151,22 @@ def eci_to_ll(x, y, z, jdn):
     r = np.sqrt(x**2 + y**2 + z**2)
     phi = np.arcsin(z/r)
 
-    lam = (np.degrees(np.arctan2(y, x)) - at.theta_g(jdn)) % 360
+    lam = (np.degrees(np.arctan2(y, x)) - at.theta_g(jdn))
+    lam = wrap_to_360(lam)
 
     return np.degrees(phi), lam
+
+
+def ta_to_ma(e, ta):
+    """ Functtion to get mean anomaly from true anomaly
+        :param ta: true anomaly (deg)
+        :return ma: mean anomaly (deg)
+    """
+    ta = np.radians(ta)
+    ea = np.arctan(np.tan(ta/2)/np.sqrt((1+e)/(1-e)))*2
+    ma = wrap_to_360(np.degrees(ea - e*np.sin(ea)))
+
+    return ma
 
 
 def vector_to_elements(r, vel, mu):

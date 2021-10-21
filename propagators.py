@@ -38,24 +38,21 @@ def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False):
 
     lan0 = lan
     w0 = w
-    ta0 = ta
+
+    m0 = np.radians(func.ta_to_ma(e, ta))
 
     for t in ts:
-        ma = n*t
+        ma = n*t + m0
         lan = lan0 + landot*t
         w = w0 + wdot*t
 
-        ta = func.kepler_ta(e, ma) + ta0
-        r = a*(1 - e**2)/(1 + e*np.cos(ta))
+        ta = func.kepler_ta(e, np.degrees(ma))
 
-        x = r*np.cos(ta)
-        y = r*np.sin(ta)
+        x, y, z = func.elements_to_vector(a, e, i, lan, w, ta)
 
-        xp, yp, zp = func.perifocal_to_eci(lan, i, w, x, y)
-
-        xs.append(xp)
-        ys.append(yp)
-        zs.append(zp)
+        xs.append(x)
+        ys.append(y)
+        zs.append(z)
 
     return ts, np.array(xs), np.array(ys), np.array(zs)
 

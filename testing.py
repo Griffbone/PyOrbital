@@ -6,6 +6,8 @@ import cartopy.crs as crs
 import astrotime as at
 import functions as func
 from tle import read_tle
+from cartopy.feature.nightshade import Nightshade
+from datetime import datetime, timezone, timedelta
 
 
 def ground_track(t0, ts, xs, ys, zs):
@@ -30,10 +32,9 @@ def ground_track(t0, ts, xs, ys, zs):
     return phis, lams
 
 
-# Get orbital elements from the TLE
 l1 = 'ISS (ZARYA)'
-l2 = '1 25544U 98067A   21292.89044074  .00004617  00000-0  92733-4 0  9998'
-l3 = '2 25544  51.6431  86.1166 0004166 125.7553 304.8177 15.48743137307929'
+l2 = '1 25544U 98067A   21294.13453560  .00002095  00000-0  46566-4 0  9992'
+l3 = '2 25544  51.6430  79.9628 0004254 128.2192  43.3615 15.48750324308'
 iss = read_tle(l1, l2, l3)
 
 epoch = iss['epoch']
@@ -45,12 +46,30 @@ w = iss['argpe']
 ma = iss['ma']
 ta = func.kepler_ta(e, ma)
 
-# get position of ISS at epoch
-x, y, z = func.elements_to_vector(a, e, i, lan, w, ta)
-print(np.array([x, y, z])/1000)
 
-t, x, y, z = prop.kepler_propagation(a, e, i, lan, w, ta, 60*60*5, n=1000)
-# phi, lam = func.eci_to_ll(x, y, z, jdn)
-#
-print(np.array([x[0], y[0], z[0]])/1000)
-# print(np.array([x[-1], y[-1], z[-1]])/1000)
+j0 = at.datetime_to_jd(at.tle_to_datetime(21294.13453560))
+now = at.datetime_to_jd(datetime.utcnow())
+dt = (now - j0) * 60**2 * 24
+
+t, x, y, z = prop.kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=True)
+
+lats = []
+lons = []
+tgs = []
+
+for i in range(0, len(t)):
+    jdn = j0 + t[i]/(60**2 * 24)
+    lat, lon = func.eci_to_ll(x[i], y[i], z[i], jdn)
+    tgs.append(at.theta_g(jdn))
+
+    lats.append(lat)
+    lons.append(lon)
+
+ax = plt.axes(projection=crs.PlateCarree())
+ax.coastlines(resolution='110m')
+
+ax.scatter(lons[-1], lats[-1], marker='x', color='r', s=100)
+ax.plot(lons, lats, transform=crs.Geodetic())
+
+ax.add_feature(Nightshade(datetime.utcnow(), alpha=0.2))
+plt.show()
