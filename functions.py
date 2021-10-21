@@ -120,22 +120,21 @@ def kepler_ta(e, ma):
     return TA[0]
 
 
-def eci_to_ll(x, y, z, jdn, ut):
+def eci_to_ll(x, y, z, jdn):
     """ Function to convert ECI coordinates to lat/lon
         :param x: ECI x position (m)
         :param y: ECI y position (m)
         :param z: ECI z position (m)
         :param jdn: julian day number
-        :param ut: universal time
 
-        :return phi: latitude
-        :return lam: longitude
+        :return phi: latitude (deg)
+        :return lam: longitude (deg)
     """
 
     r = np.sqrt(x**2 + y**2 + z**2)
     phi = np.arcsin(z/r)
 
-    lam = (np.degrees(np.arctan2(y, x)) - at.theta_g(jdn, ut)) % 360
+    lam = (np.degrees(np.arctan2(y, x)) - at.theta_g(jdn)) % 360
 
     return np.degrees(phi), lam
 

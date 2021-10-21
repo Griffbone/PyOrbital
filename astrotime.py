@@ -1,7 +1,7 @@
 from constants import j2000
 
 
-def date_to_jd(day, month, year):
+def date_to_jd(day, month, year, h, m, s):
     """ Function to calculate Julian Day from Gregorian Calendar date
         Follows Curtis Eq. 5.48
 
@@ -12,28 +12,41 @@ def date_to_jd(day, month, year):
     """
 
     jd = 367*year - int((7/4) * (year + int((month + 9)/12))) + int((275/9)*month) + day + 1721013.5
+    ut =  h/24 + m/(24*60) + s/(24*60**2)
 
-    return jd
+    return jd + ut
 
 
-def theta_g(jd, ut):
+def theta_g(jdn):
     """ Function to get Greenwich sidereal time from Julian Date
         This function follows Curtis eq. 5.50
 
-        :param jd: julian day number
-        :param ut: UT time (hr)
+        :param jdn: julian day number
         :return tg: Greenwich sidereal time (deg)
     """
 
-    t0 = (jd - j2000)/36525
+    ut = jdn % 0.5
+    j0 = jdn - ut
+
+    t0 = (j0 - j2000)/36525
     tg = 100.4606184 + 36000.77004*t0 + 0.000387933*t0**2 - 2.583e-8*t0**3
 
     tg -= int(tg/360)*360
-    tg += (ut/24)*360.98564724
+    tg += ut*360.98564724
     tg -= int(tg/360)*360
 
     return tg
 
+
+def theta_g_2(jdn):
+    # https://lweb.cfa.harvard.edu/~jzhao/times.html#ref7
+
+    d = jdn - j2000
+    T = d/36525
+
+    gmst = 24110.54841 + 8640184.812866*T + 0.093104*T**2 - 0.0000062*T**3
+
+    return gmst/60**2
 
 # def jd_to_date(jd):
 #     """ Function to calculate Gregorian calendar date from Julian date

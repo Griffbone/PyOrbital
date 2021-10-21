@@ -38,13 +38,14 @@ def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False):
 
     lan0 = lan
     w0 = w
+    ta0 = ta
 
     for t in ts:
         ma = n*t
         lan = lan0 + landot*t
         w = w0 + wdot*t
 
-        ta = func.kepler_ta(e, ma)
+        ta = func.kepler_ta(e, ma) + ta0
         r = a*(1 - e**2)/(1 + e*np.cos(ta))
 
         x = r*np.cos(ta)
