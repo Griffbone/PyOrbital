@@ -37,4 +37,22 @@ ra = 485000e3 + cns.re
 a = (rp + ra)/2
 e = (ra - rp)/(ra + rp)
 
+T = 1000000
 
+ts, x1, y1, z1 = prop.kepler_propagation(a, e, 0, 0, 0, 0, T, n=1000, j2=False)
+
+ts, x2, y2, z2 = prop.kepler_propagation(ra, 0, 0, 0, 0, 90, T, n=1000, j2=False)
+
+dx = x2 - x1
+dy = y2 - y1
+dz = z2 - z1
+
+rs = np.sqrt(dx**2 + dy**2 + dz**2)
+
+# for i in range(0, len(ts)):
+#     r = np.array([x1])
+#     r = np.sqrt(x[])
+
+# plt.axis('equal')
+plt.plot(ts, rs)
+plt.show()
