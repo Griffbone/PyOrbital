@@ -46,8 +46,8 @@ def ground_track(t0, ts, xs, ys, zs):
     lams = []
 
     for i in range(0, len(ts)):
-        t = ts[i]/60**2
-        phi, lam = func.eci_to_ll(xs[i], ys[i], zs[i], t0, t)
+        t = t0 + ts[i]/(60**2 * 24)
+        phi, lam, _ = func.eci_to_lla(xs[i], ys[i], zs[i], t)
 
         phis.append(phi)
         lams.append(lam)
