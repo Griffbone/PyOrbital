@@ -2,6 +2,40 @@ import numpy as np
 from scipy.optimize import fsolve
 import astrotime as at
 import constants as cns
+import matplotlib.pyplot as plt
+
+# ====================== ELEMENT SET CLASS ======================
+
+
+class Elements:
+    def __init__(self, a, e, i, lan, w, ta, mu):
+        self.a = a
+        self.e = e
+        self.i = i
+        self.lan = lan
+        self.w = w
+        self.ta = ta
+        self.mu = mu
+
+        self.ap = a*(1 + e)
+        self.pe = a*(1 - e)
+
+        self.T = period(a, mu)
+        self.n = 2*np.pi/self.T
+
+    def perifocal_plot(self, n=1000):
+        _, _, x, y = perifocal_coords(self.a, self.e, np.linspace(0, 2*np.pi, n))
+        plt.plot(x, y)
+        plt.axis('equal')
+
+    def get_eci(self, ta=None):
+        if ta is None:
+            ta = self.ta
+
+        x, y, z, vx, vy, vz = elements_to_vector(self.a, self.e, self.i, self.lan, self.w, ta)
+
+        return x, y, z, vx, vy, vz
+
 
 # ====================== BASIC MATH FUNCTIONS ======================
 
@@ -68,11 +102,12 @@ def rotmat(t, axis):
 # ====================== ORBITAL POSITION FUNCTIONS ======================
 
 
-def perifocal_coords(a, e, thetas=np.linspace(0, 2*np.pi, 100)):
+def perifocal_coords(a, e, thetas=np.linspace(0, 2*np.pi, 100), margin=0.1):
     """ Function to return perifocal polar coordinates of an orbit
         :param a: semimajor axis
         :param e: eccentricity
         :param thetas: array of true anomalies (rad)
+        :param margin: margin to add to asymptotes for a hyperbolic orbit
 
         :return rs: array of distances
         :return thetas: array of true anomalies
@@ -80,7 +115,13 @@ def perifocal_coords(a, e, thetas=np.linspace(0, 2*np.pi, 100)):
         :return ys: array of y locations
     """
 
-    p = (a*np.sqrt(1 - e**2))**2 / a
+    if e <= 1:
+        p = a*(1 - e**2)
+    else:
+        p = a*(e**2 - 1)
+        asm = np.arccos(-1/e)
+        thetas = np.linspace(-asm + abs(margin), asm - abs(margin), len(thetas))
+
     rs = p/(1 + e*np.cos(thetas))
 
     xs = rs*np.cos(thetas)
@@ -121,6 +162,50 @@ def ta_to_ma(e, ta):
 
     return ma
 
+
+def t_between(a, e, ta1, ta2, mu):
+    """ Function to get time between two true anomalies
+        :param ta1: first true anomaly (deg)
+        :param ta2: second true anomaly (deg)
+        :return Dt: time of flight
+    """
+
+    T = period(a, mu)
+    n = 360/T
+
+    m1 = ta_to_ma(e, ta1)
+    m2 = ta_to_ma(e, ta2)
+
+    t0 = m1/n
+    t1 = m2/n
+
+    Dt = t1 - t0
+
+    if Dt < 0:
+        Dt += T
+
+    return Dt
+
+
+def ta_change(a, e, ta1, Dt, mu):
+    """ Function to get change in true anomaly from a change in time
+        :param a: semimajor axis
+        :param e: eccentricity
+        :param ta1: original true anomaly (deg)
+        :param Dt: change in time (s)
+        :param mu: central gravitational parameter
+
+        :return ta2: second true anomaly
+    """
+    T = period(a, mu)
+    n = 360/T
+
+    m1 = ta_to_ma(e, ta1)
+    m2 = m1 + n*Dt
+
+    ta2 = kepler_ta(e, m2)
+
+    return ta2
 
 # ====================== ORBITAL REFERENCE FRAME FUNCTIONS ======================
 
@@ -173,25 +258,67 @@ def eci_to_lla(x, y, z, jdn):
 
 # ====================== ORBITAL ELEMENT CONVERSION ======================
 
-def elements_to_vector(a, e, i, lan, w, ta):
+
+def elements_to_eci_vel(a, e, i, lan, w, ta, mu=cns.mu):
     """ Function to calculate ECI state vector from orbital elements
-        :param a: semimajor axis (m)
-        :param e: eccentricity
-        :param i: inclination (deg)
-        :param lan: longnitude of ascending node (deg)
-        :param w: argument of periapsis
-        :param ta: true anomaly (deg)
+            :param a: semimajor axis (m)
+            :param e: eccentricity
+            :param i: inclination (deg)
+            :param lan: longnitude of ascending node (deg)
+            :param w: argument of periapsis
+            :param ta: true anomaly (deg)
+            :param mu: central body gravitational parameter
 
-        :return x: x component of state vector
-        :return y: y component of state vector
-        :return z: z component of state vector
-    """
+            :return vx: x component of velocity vector
+            :return vy: y component of velocity vector
+            :return vz: z component of velocity vector
+        """
 
-    p = (a * np.sqrt(1 - e ** 2)) ** 2 / a
+    if e <= 1:
+        h = np.sqrt(mu * a * (1 + e ** 2))
+    else:
+        h = np.sqrt(mu*a*(e**2 - 1))
+        asm = np.degrees(np.arccos(-1 / e))
+
+        if asm <= wrap_to_360(ta) <= 360 - asm:
+            raise ValueError('Cannot find ECI velocity at specified true anomaly; orbit is hyperbolic.')
+
+    vx = (mu / h) * (-np.sin(np.radians(ta)))
+    vy = (mu / h) * (e + np.cos(np.radians(ta)))
+
+    vx, vy, vz = perifocal_to_eci(lan, i, w, vx, vy)
+
+    return vx, vy, vz
+
+
+def elements_to_eci_pos(a, e, i, lan, w, ta):
+    """ Function to calculate ECI state vector from orbital elements
+            :param a: semimajor axis (m)
+            :param e: eccentricity
+            :param i: inclination (deg)
+            :param lan: longnitude of ascending node (deg)
+            :param w: argument of periapsis
+            :param ta: true anomaly (deg)
+            :param mu: central body gravitational parameter
+
+            :return x: x component of position vector
+            :return y: y component of position vector
+            :return z: z component of position vector
+        """
+
+    if e <= 1:
+        p = a*(1 - e**2)
+    else:
+        p = a*(e**2 - 1)
+        asm = np.degrees(np.arccos(-1/e))
+
+        if asm <= wrap_to_360(ta) <= 360 - asm:
+            raise ValueError('Cannot find ECI coordinates at specified true anomaly; orbit is hyperbolic.')
+
     r = p / (1 + e * np.cos(np.radians(ta)))
 
-    x = r*np.cos(np.radians(ta))
-    y = r*np.sin(np.radians(ta))
+    x = r * np.cos(np.radians(ta))
+    y = r * np.sin(np.radians(ta))
 
     x, y, z = perifocal_to_eci(lan, i, w, x, y)
 
@@ -239,3 +366,18 @@ def vector_to_elements(r, vel, mu):
     a = 1/((2/np.linalg.norm(r)) - (np.linalg.norm(vel)**2/mu))
 
     return a, e, i, omega, w, M
+
+
+# ====================== MISCELLANEOUS ORBIT MATH ======================
+
+def period(a, mu):
+    """ Function to get orbital period from semimajor axis
+        :param a: semimajor axis (m)
+        :param mu: parent gravitational parameter
+
+        :return T: period (seconds)
+    """
+
+    T = np.sqrt((4*np.pi**2*a**3)/mu)
+
+    return T
