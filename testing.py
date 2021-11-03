@@ -1,107 +1,85 @@
-import maneuvers as man
-import pyOrbital.bodies
-import pyOrbital.constants as cns
+import propagators as prop
 import numpy as np
 import matplotlib.pyplot as plt
-import plotting as oplot
-import matplotlib.patches as patches
+import constants as cns
+import cartopy.crs as crs
+import astrotime as at
+import functions as func
+from tle import read_tle
+from cartopy.feature.nightshade import Nightshade
+from datetime import datetime, timezone, timedelta
 
 
-class Orbit:
-    def __init__(self, a, e, i, lan, w, ta=0, parent=pyOrbital.bodies.earth):
-        self.a = a
-        self.e = e
-        self.i = i
-        self.lan = lan
-        self.w = w
-        self.ta = ta
+def ground_track(t0, ts, xs, ys, zs):
+    """ Function to return geodetic lat/lon from ECI positions
+        :param t0: epoch (JDN)
+        :param ts: array of times since epoch (s)
+        :param xs: ECI X position
+        :param ys: ECI Y position
+        :param zs: ECI Z position
+    """
 
-    def plot_xy(self, ax, tas=np.linspace(0, 2*np.pi, 100)):
-        x, y, _ = oplot.plot_orbit(self.a, self.e, self.i, self.lan, self.w, tas)
-        ax.plot(x, y)
+    phis = []
+    lams = []
 
-    def plot_yz(self, ax, tas=np.linspace(0, 2*np.pi, 100)):
-        _, y, z = oplot.plot_orbit(self.a, self.e, self.i, self.lan, self.w, tas)
-        ax.plot(y, z)
+    for i in range(0, len(ts)):
+        t = ts[i]/60**2
+        phi, lam = func.eci_to_ll(xs[i], ys[i], zs[i], t0, t)
 
-    def plot_xz(self, ax, tas=np.linspace(0, 2*np.pi, 100)):
-        x, _, z = oplot.plot_orbit(self.a, self.e, self.i, self.lan, self.w, tas)
-        ax.plot(x, z)
+        phis.append(phi)
+        lams.append(lam)
 
-
-T = 60*60*24
-
-r1 = 6578e3
-r2 = (cns.mu*T**2/((2*np.pi)**2))**(1/3)
-a = (r1 + r2)/2
-e = (r2 - r1)/(r1 + r2)
-
-_, v1, _, v2 = man.vis_viva(r1, r2, cns.mu)
-
-dv1 = v1 - np.sqrt(cns.mu/r1)
-dv2 = man.plane_change(v2, np.radians(28), np.sqrt(cns.mu/r2))
-
-initial = Orbit(r1, 0, np.radians(28), 0, 0)
-transfer = Orbit(a, e, np.radians(28), 0, 0)
-final = Orbit(r2, 0, 0, 0, 0)
-
-plt.style.use('seaborn')
-fig, ax = plt.subplots()
-
-initial.plot_xy(ax)
-transfer.plot_xy(ax)
-final.plot_xy(ax)
-
-ax.set_aspect('equal')
-plt.show()
+    return phis, lams
 
 
-
-
-# plt.show()
-
-# earth = patches.Circle((0, 0), cns.re, alpha=0.5)
-# ax.add_artist(earth)
-
-# x, y, z = oplot.plot_orbit(r1, 0, 28, 0, 0)
-# plt.plot(x, y, z, '--')
-# max1 = max([max(x), max(y), max(z)])
+# l1 = 'ISS (ZARYA)'
+# l2 = '1 25544U 98067A   21294.13453560  .00002095  00000-0  46566-4 0  9992'
+# l3 = '2 25544  51.6430  79.9628 0004254 128.2192  43.3615 15.48750324308'
+# iss = read_tle(l1, l2, l3)
 #
-# x, y, z = oplot.plot_orbit(a, e, 28, 0, 0, np.linspace(0, np.pi, 100))
-# plt.plot(x, y, z, '--')
-# max2 = max([max(x), max(y), max(z)])
-#
-# x, y, z = oplot.plot_orbit(r2, 0, 0, 0, 0)
-# plt.plot(x, y, z, '--')
-# max3 = max([max(x), max(y), max(z)])
-#
-# gmax = max([max1, max2, max3])
-#
-# ax.scatter(r1, 0, 0, zorder=3)
-# ax.scatter(-r2, 0, 0, zorder=3)
-#
-# ax.set_xlim([-gmax, gmax])
-# ax.set_ylim([-gmax, gmax])
-# ax.set_zlim([-gmax, gmax])
+# epoch = iss['epoch']
+# a = iss['sma']
+# e = iss['eccentricity']
+# i = iss['inclination']
+# lan = iss['raan']
+# w = iss['argpe']
+# ma = iss['ma']
+# ta = func.kepler_ta(e, ma)
 #
 #
-# u = np.linspace(0, 2*np.pi, 20)
-# v = np.linspace(0, np.pi, 20)
+# j0 = at.datetime_to_jd(at.tle_to_datetime(21294.13453560))
+# now = at.datetime_to_jd(datetime.utcnow())
+# dt = (now - j0) * 60**2 * 24
 #
-# x = cns.re * np.outer(np.cos(u), np.sin(v))
-# y = cns.re * np.outer(np.sin(u), np.sin(v))
-# z = cns.re * np.outer(np.ones(np.size(u)), np.cos(v))
+# t, x, y, z = prop.kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=True)
+# t2, x2, y2, z2 = prop.kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False)
 #
-# ax.plot_surface(x, y, z, alpha=1, edgecolor='k', facecolor='b')
+# lats = []
+# lons = []
+# lats2 = []
+# lons2 = []
 #
+# for i in range(0, len(t)):
+#     jdn = j0 + t[i]/(60**2 * 24)
+#     lat, lon = func.eci_to_ll(x[i], y[i], z[i], jdn)
 #
-# ax.set_xlabel('ECI X [m]')
-# ax.set_ylabel('ECI Y [m]')
-# ax.set_zlabel('ECI Z [m]')
+#     lats.append(lat)
+#     lons.append(lon)
 #
-# ax.legend(['Initial Orbit', 'Transfer Orbit', 'Final Orbit',
-#            'First Burn, DV = {:.0f} m/s'.format(dv1), 'Second Burn, DV = {:.0f} m/s'.format(dv2)])
-# plt.title('GTO-1800 Transfer Orbit')
+#     lat, lon = func.eci_to_ll(x2[i], y2[i], z2[i], jdn)
+#     lats2.append(lat)
+#     lons2.append(lon)
 #
-# # plt.axis('equal')
+# ax = plt.axes(projection=crs.PlateCarree())
+# ax.coastlines(resolution='110m')
+#
+# ax.scatter(lons[-1], lats[-1], marker='x', color='r', s=100)
+# # ax.plot(lons, lats, transform=crs.Geodetic())
+#
+# ax.scatter(lons2[-1], lats2[-1], marker='x', color='b', s=100)
+# # ax.plot(lons2, lats2, transform=crs.Geodetic())
+#
+# ax.set_ylim([-180, 180])
+#
+# ax.add_feature(Nightshade(datetime.utcnow(), alpha=0.2))
 # plt.show()

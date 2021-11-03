@@ -1,12 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pyOrbital.constants as cons
-import pyOrbital.functions as func
-import pyOrbital.astrotime as time
-from scipy.optimize import fsolve
+import functions as func
+import astrotime as time
 import time as timelib
 import cartopy.crs as ccrs
-import pyOrbital.constants as cons
+import constants as cons
 from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
 
 
