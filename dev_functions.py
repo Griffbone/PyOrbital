@@ -53,8 +53,8 @@ def patch_point(sat, targ, rs):
 
         ta_targ = func.ta_change(targ.a, targ.e, targ.ta, Dt, targ.mu)
 
-        xs, ys, zs, _, _, _ = sat.get_eci(ta_sat)
-        xt, yt, zt, _, _, _ = targ.get_eci(ta_targ)
+        xs, ys, zs = sat.get_eci(ta_sat)
+        xt, yt, zt = targ.get_eci(ta_targ)
 
         r = np.sqrt((xt - xs)**2 + (yt - ys)**2 + (zt - zs)**2)
 
@@ -70,4 +70,22 @@ def patch_point(sat, targ, rs):
     return ta_sat, ta_targ, intercept
 
 
-def
+def patched_conics(sat, targ, rs, mu_t):
+    ta_sat, ta_targ, incpt = patch_point(sat, targ, rs)
+
+    if incpt is False:
+        return None
+
+    xs, ys, zs = func.elements_to_eci_pos(sat.a, sat.e, sat.i, sat.lan, sat.w, ta_sat)
+    vxs, vys, vzs = func.elements_to_eci_vel(sat.a, sat.e, sat.i, sat.lan, sat.w, ta_sat)
+
+    xt, yt, zt = func.elements_to_eci_pos(targ.a, targ.e, targ.i, targ.lan, targ.w, ta_targ)
+    vxt, vyt, vzt = func.elements_to_eci_vel(targ.a, targ.e, targ.i, targ.lan, targ.w, ta_targ)
+
+    vrel = np.array([vxs, vys, vzs]) - np.array([vxt, vyt, vzt])
+    rrel = np.array([xs, ys, zs]) - np.array([xt, yt, zt])
+
+    a, e, i, omega, w, M = func.vector_to_elements(rrel, vrel, mu_t)
+
+    # print(M)
+    return func.Elements(a, e, i, omega, w, 0, mu_t)

@@ -20,7 +20,7 @@ class Elements:
         self.ap = a*(1 + e)
         self.pe = a*(1 - e)
 
-        self.T = period(a, mu)
+        self.T = period(abs(a), mu)
         self.n = 2*np.pi/self.T
 
     def perifocal_plot(self, n=1000):
@@ -32,12 +32,25 @@ class Elements:
         if ta is None:
             ta = self.ta
 
-        x, y, z, vx, vy, vz = elements_to_vector(self.a, self.e, self.i, self.lan, self.w, ta)
+        x, y, z = elements_to_eci_pos(self.a, self.e, self.i, self.lan, self.w, ta)
 
-        return x, y, z, vx, vy, vz
+        return x, y, z
 
 
 # ====================== BASIC MATH FUNCTIONS ======================
+
+def vector_angle(v1, v2):
+    """ Fuction to calculate an angle between two vectors
+        :param v1: first vector
+        :param v2: second vector
+
+        :return theta: angle (rad)
+    """
+
+    dot = np.dot(v1, v2)
+    mag = np.linalg.norm(v1)*np.linalg.norm(v2)
+
+    return np.arccos(dot/mag)
 
 
 def wrap_to_360(theta):
@@ -348,24 +361,39 @@ def vector_to_elements(r, vel, mu):
     else:
         v = 2*np.pi - np.arccos(np.dot(evec, r)/(np.linalg.norm(evec)*np.linalg.norm(r)))
 
+    print(v)
+
     i = np.arccos(h[2]/np.linalg.norm(h))
     e = np.linalg.norm(evec)
-    E = 2*np.arctan(np.tan(v/2)/np.sqrt((1+2)/(1-e)))
 
-    if n[1] >= 0:
+    if e < 1:
+        E = 2*np.arctan(np.tan(v/2)*((1 + e)/(1 - e))**(-1/2))
+        M = E - e * np.sin(E)
+    elif e > 1:
+        H = 2*np.arctanh(np.tan(v/2)*((1 + e)/(e - 1))**(-1/2))
+        M = e*np.sinh(H) - H
+    elif e == 1:
+        raise ValueError("Well, you're fucked")
+
+    if i == 0 or i == np.pi:
+        omega = 0
+    elif n[1] >= 0:
         omega = np.arccos(n[0]/np.linalg.norm(n))
     else:
         omega = 2*np.pi - np.arccos(n[0]/np.linalg.norm(n))
 
-    if evec[2] >= 0:
+    if i == 0 or i == np.pi:
+        x = np.array([1, 0, 0])
+        w = vector_angle(x, evec)
+    elif evec[2] >= 0:
         w = np.arccos(np.dot(n, evec)/(np.linalg.norm(n)*np.linalg.norm(evec)))
     else:
         w = 2*np.pi - np.arccos(np.dot(n, evec)/(np.linalg.norm(n)*np.linalg.norm(evec)))
 
-    M = E - e*np.sin(E)
+    # M = E - e*np.sin(E)
     a = 1/((2/np.linalg.norm(r)) - (np.linalg.norm(vel)**2/mu))
 
-    return a, e, i, omega, w, M
+    return a, e, i, omega, w, wrap_to_2pi(M)
 
 
 # ====================== MISCELLANEOUS ORBIT MATH ======================
