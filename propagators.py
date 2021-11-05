@@ -48,7 +48,7 @@ def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False):
 
         ta = func.kepler_ta(e, np.degrees(ma))
 
-        x, y, z = func.elements_to_vector(a, e, i, lan, w, ta)
+        x, y, z = func.elements_to_eci_pos(a, e, i, lan, w, ta)
 
         xs.append(x)
         ys.append(y)

@@ -49,7 +49,7 @@ def patch_point(sat, targ, rs):
     intercept = False
 
     while True:
-        Dt = func.t_between(sat.a, sat.e, ta1, ta_sat, sat.mu)
+        Dt = func.t_between(sat.a, sat.e, sat.ta, ta_sat, sat.mu)
 
         ta_targ = func.ta_change(targ.a, targ.e, targ.ta, Dt, targ.mu)
 

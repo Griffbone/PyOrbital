@@ -50,7 +50,12 @@ def vector_angle(v1, v2):
     dot = np.dot(v1, v2)
     mag = np.linalg.norm(v1)*np.linalg.norm(v2)
 
-    return np.arccos(dot/mag)
+    if dot == 0:
+        theta = 0
+    else:
+        theta = np.arccos(dot/mag)
+
+    return theta
 
 
 def wrap_to_360(theta):
@@ -338,62 +343,138 @@ def elements_to_eci_pos(a, e, i, lan, w, ta):
     return x, y, z
 
 
-def vector_to_elements(r, vel, mu):
-    """ Function to calculate orbital elmements given ECI state vector
+def vector_to_elements(r, v, mu):
+    """ Function to determine orbital elements from state vector
         :param r: position vector
-        :param vel: velocity vector
-        :param mu: gravitational parameter
+        :param v: velocity vector
+        :param mu: central body gravitational parameter
 
         :return a: semimajor axis
         :return e: eccentricity
-        :return i: inclination
-        :return omega: longnitude of ascending node
-        :return w: argument of periapsis
-        :return M: mean anomaly
+        :return i: inclination (deg)
+        :return lan: longitude of ascending node (deg)
+        :return w: argument of periapsis (deg)
+        :return ta: true anomaly (deg)
     """
 
-    h = np.cross(r, vel)
-    evec = np.cross(vel, h)/mu - r/np.linalg.norm(r)
-    n = np.transpose(np.array([-h[1], h[0], 0]))
+    rvec = r
+    r = np.linalg.norm(rvec)
 
-    if np.dot(r, vel) > 0:
-        v = np.arccos(np.dot(evec, r)/(np.linalg.norm(evec)*np.linalg.norm(r)))
+    vvec = v
+    v = np.linalg.norm(vvec)
+
+    vr = np.dot(rvec, vvec)/r
+
+    # Angular momentum
+    hvec = np.cross(rvec, vvec)
+    h = np.linalg.norm(hvec)
+
+    # Inclination
+    i = np.arccos(hvec[2]/h)
+
+    # LAN
+    nvec = np.cross([0, 0, 1], hvec)
+    n = np.linalg.norm(nvec)
+
+    if n == 0:
+        lan = 0
     else:
-        v = 2*np.pi - np.arccos(np.dot(evec, r)/(np.linalg.norm(evec)*np.linalg.norm(r)))
+        lan = np.arccos(nvec[0] / n)
+        if nvec[1] < 0:
+            lan = 2*np.pi - lan
 
-    print(v)
-
-    i = np.arccos(h[2]/np.linalg.norm(h))
+    # eccentricity
+    evec = (1/mu)*((v**2 - mu/r)*rvec - r*vr*vvec)
     e = np.linalg.norm(evec)
 
-    if e < 1:
-        E = 2*np.arctan(np.tan(v/2)*((1 + e)/(1 - e))**(-1/2))
-        M = E - e * np.sin(E)
-    elif e > 1:
-        H = 2*np.arctanh(np.tan(v/2)*((1 + e)/(e - 1))**(-1/2))
-        M = e*np.sinh(H) - H
-    elif e == 1:
-        raise ValueError("Well, you're fucked")
-
-    if i == 0 or i == np.pi:
-        omega = 0
-    elif n[1] >= 0:
-        omega = np.arccos(n[0]/np.linalg.norm(n))
+    # argument of perigee
+    if n == 0:
+        # if orbit is in the equitorial plane, argument of periapsis is given from the equinox direction
+        w = vector_angle(evec/e, np.array([1, 0, 0]))
+    elif e > 0:
+        w = np.arccos(np.dot(nvec, evec)/(n*e))
+        if evec[2] < 0:
+            w = 2*np.pi - w
     else:
-        omega = 2*np.pi - np.arccos(n[0]/np.linalg.norm(n))
+        w = 0
 
-    if i == 0 or i == np.pi:
-        x = np.array([1, 0, 0])
-        w = vector_angle(x, evec)
-    elif evec[2] >= 0:
-        w = np.arccos(np.dot(n, evec)/(np.linalg.norm(n)*np.linalg.norm(evec)))
+    # True anomaly
+    if e == 0:
+        cp = np.cross(nvec, rvec)
+        if cp[3] >= 0:
+            ta = np.arccos(np.dot(nvec, rvec)/(n*r))
+        else:
+            ta = 2*np.pi - np.arccos(np.dot(nvec, rvec)/(n*r))
     else:
-        w = 2*np.pi - np.arccos(np.dot(n, evec)/(np.linalg.norm(n)*np.linalg.norm(evec)))
+        ta = np.arccos(np.dot(evec, rvec)/(e*r))
+        if vr < 0:
+            ta = 2*np.pi - ta
 
-    # M = E - e*np.sin(E)
-    a = 1/((2/np.linalg.norm(r)) - (np.linalg.norm(vel)**2/mu))
+    # semimajor axis
+    a = 1/(2/r - v**2/mu)
 
-    return a, e, i, omega, w, wrap_to_2pi(M)
+    if e > 1:
+        a = -a
+
+    return a, e, np.degrees(i), np.degrees(lan), np.degrees(w), np.degrees(ta)
+
+
+# def vector_to_elements(r, vel, mu):
+#     """ Function to calculate orbital elmements given ECI state vector
+#         :param r: position vector
+#         :param vel: velocity vector
+#         :param mu: gravitational parameter
+#
+#         :return a: semimajor axis
+#         :return e: eccentricity
+#         :return i: inclination
+#         :return omega: longnitude of ascending node
+#         :return w: argument of periapsis
+#         :return M: mean anomaly
+#     """
+#
+#     h = np.cross(r, vel)
+#     evec = np.cross(vel, h)/mu - r/np.linalg.norm(r)
+#     n = np.transpose(np.array([-h[1], h[0], 0]))
+#
+#     if np.dot(r, vel) > 0:
+#         v = np.arccos(np.dot(evec, r)/(np.linalg.norm(evec)*np.linalg.norm(r)))
+#     else:
+#         v = 2*np.pi - np.arccos(np.dot(evec, r)/(np.linalg.norm(evec)*np.linalg.norm(r)))
+#
+#     # print(v)
+#
+#     i = np.arccos(h[2]/np.linalg.norm(h))
+#     e = np.linalg.norm(evec)
+#
+#     if e < 1:
+#         E = 2*np.arctan(np.tan(v/2)*((1 + e)/(1 - e))**(-1/2))
+#         M = E - e * np.sin(E)
+#     elif e > 1:
+#         H = 2*np.arctanh(np.tan(v/2)*((1 + e)/(e - 1))**(-1/2))
+#         M = e*np.sinh(H) - H
+#     elif e == 1:
+#         raise ValueError("Well, you're fucked")
+#
+#     if i == 0 or i == np.pi:
+#         omega = 0
+#     elif n[1] >= 0:
+#         omega = np.arccos(n[0]/np.linalg.norm(n))
+#     else:
+#         omega = 2*np.pi - np.arccos(n[0]/np.linalg.norm(n))
+#
+#     if i == 0 or i == np.pi:
+#         x = np.array([1, 0, 0])
+#         w = vector_angle(x, evec)
+#     elif evec[2] >= 0:
+#         w = np.arccos(np.dot(n, evec)/(np.linalg.norm(n)*np.linalg.norm(evec)))
+#     else:
+#         w = 2*np.pi - np.arccos(np.dot(n, evec)/(np.linalg.norm(n)*np.linalg.norm(evec)))
+#
+#     # M = E - e*np.sin(E)
+#     a = 1/((2/np.linalg.norm(r)) - (np.linalg.norm(vel)**2/mu))
+#
+#     return a, e, i, omega, w, kepler_ta(e, M)
 
 
 # ====================== MISCELLANEOUS ORBIT MATH ======================
