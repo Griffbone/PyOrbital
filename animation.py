@@ -9,9 +9,9 @@ import matplotlib
 
 import propagators
 
-ra = 0.3744e9
-rp = 200000 + cns.re
-sat = func.Elements((ra + rp)/2, (ra - rp)/(ra + rp), 45, 0, 0, 0, cns.mu)
+ra = 35000e3 + cns.re #0.3744e9/2
+rp = ra # 200000 + cns.re
+sat = func.Elements((ra + rp)/2, (ra - rp)/(ra + rp), 0, 0, 0, 0, cns.mu)
 moon = func.Elements(0.3844e9, 0, 0, 0, 0, 140, cns.mu)
 
 n = 1000
@@ -64,10 +64,9 @@ def update(i):
 
     return soi[0], dot, dot2, mline, sline
 
+# matplotlib.rcParams['animation.ffmpeg_path'] = r'C:\Users\Griffin\Downloads\ffmpeg-2021-11-03-git-08a501946f-essentials_build\ffmpeg-2021-11-03-git-08a501946f-essentials_build\bin\ffmpeg.exe'
 
-matplotlib.rcParams['animation.ffmpeg_path'] = r'C:\Users\Griffin\Downloads\ffmpeg-2021-11-03-git-08a501946f-essentials_build\ffmpeg-2021-11-03-git-08a501946f-essentials_build\bin\ffmpeg.exe'
-
-ani = FuncAnimation(fig, update, n, interval=1, blit=True, repeat=False, save_count=50)
-writerg = animation.FFMpegWriter(fps=100)
-ani.save('test.mp4', writer=writerg)
+ani = FuncAnimation(fig, update, n, interval=1, blit=True, repeat=False, save_count=100)
+# writerg = animation.FFMpegWriter(fp)
+ani.save('test.gif')
 plt.show()
