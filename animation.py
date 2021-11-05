@@ -4,6 +4,8 @@ from matplotlib.animation import FuncAnimation
 import functions as func
 import constants as cns
 from matplotlib.patches import Circle
+from matplotlib import animation
+import matplotlib
 
 import propagators
 
@@ -63,5 +65,9 @@ def update(i):
     return soi[0], dot, dot2, mline, sline
 
 
-ani = FuncAnimation(fig, update, n, interval=1, blit=True)
+matplotlib.rcParams['animation.ffmpeg_path'] = r'C:\Users\Griffin\Downloads\ffmpeg-2021-11-03-git-08a501946f-essentials_build\ffmpeg-2021-11-03-git-08a501946f-essentials_build\bin\ffmpeg.exe'
+
+ani = FuncAnimation(fig, update, n, interval=1, blit=True, repeat=False, save_count=50)
+writerg = animation.FFMpegWriter(fps=100)
+ani.save('test.mp4', writer=writerg)
 plt.show()
