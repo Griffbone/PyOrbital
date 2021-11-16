@@ -136,7 +136,8 @@ def perifocal_coords(a, e, thetas=np.linspace(0, 2*np.pi, 100), margin=0.1):
     if e <= 1:
         p = a*(1 - e**2)
     else:
-        p = a*(e**2 - 1)
+        # p = a*(e**2 - 1)
+        p = a*(1 - e**2)
         asm = np.arccos(-1/e)
         thetas = np.linspace(-asm + abs(margin), asm - abs(margin), len(thetas))
 

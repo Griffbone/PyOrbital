@@ -5,6 +5,9 @@ import dev_functions
 import functions as func
 import dev_functions as dev
 from scipy.optimize import minimize
+
+import maneuvers
+import plotting
 import propagators
 
 def yline(val, max_x):
@@ -23,12 +26,8 @@ def circle(r, cx, cy, style):
     plt.plot(xs, ys, style)
 
 
-ra = 0.3744e9
-rp = 200000 + cns.re
+ra = 384648e3
 soi = 66.1e6
-
-sat = func.Elements((ra + rp)/2, (ra - rp)/(ra + rp), 0, 0, 0, 0, cns.mu)
-moon = func.Elements(0.3844e9, 0, 0, 0, 0, 140, cns.mu)
 
 mu_m = 4.9048695e12
 
@@ -53,35 +52,90 @@ def lunar_pc(r0, v0, phi0, lam1, rs=soi, rm=ra):
     E = v2**2/2 - mu_m/rs
     p = h2**2/mu_m
 
-    e = np.sqrt(1 + 2*E*h**2/mu_m**2)
+    e = np.sqrt(1 + 2*E*h2**2/mu_m**2)
+
+    # perilune conditions
     rp = p/(1 + e)
     vp = h2/rp
-
-    vpe = np.sqrt(2*(E + mu_m/rp))
-    print([vp, vpe])
-
-    print(vp**2/2 - mu_m/rp)
-    print(E)
 
     return rp, vp
 
 
-lunar_pc(cns.re + 200e3, np.sqrt(cns.mu/(cns.re + 200e3)) + 3200, 0, np.deg2rad(19))
+# Initial orbit
+r0 = cns.re + 200e3
+v0 = np.sqrt(cns.mu/r0) + 3150
+h0 = r0*v0
+E0 = v0**2/2 - cns.mu/r0
+a0 = -cns.mu/(2*E0)
+e0 = np.sqrt(1 + 2*E0*h0**2/cns.mu**2)
 
-# ls = np.linspace(17, 19, 1000)
-# rps = []
-# dvs = []
-#
-# for l in ls:
-#     rp, vp = lunar_pc(cns.re + 200e3, np.sqrt(cns.mu/(cns.re + 200e3)) + 3200, 0, np.deg2rad(l))
-#     dv = vp - np.sqrt(mu_m/rp)
-#
-#     rps.append(rp)
-#     dvs.append(vp)
+# Patch point
+lam1 = np.deg2rad(35)
+r1 = np.sqrt(soi ** 2 + ra ** 2 - 2 * soi * ra * np.cos(lam1))
+v1 = np.sqrt(2*(E0 + cns.mu/r1))
 
-# print(np.sqrt(mu_m/1737447.78))
+gam1 = np.arcsin((soi/r1) * np.sin(lam1))
+theta = np.arccos((1/e0)*(h0**2/(cns.mu*r1) - 1))
+phi1 = np.arccos(h0 / (r1 * v1))
 
-# plt.plot(ls, (np.array(rps) - 1737447.78)/1000)
-# plt.plot(ls, np.array(dvs))
-# # yline(100, max(ls))
-# plt.show()
+# selenocentric orbit
+vm = np.sqrt(cns.mu / ra)
+v2 = np.sqrt(v1 ** 2 + vm ** 2 - 2 * v1 * vm * np.cos(phi1 - gam1))
+eps2 = np.arcsin((vm / v2) * np.cos(lam1) - (v1 / v2) * np.cos(lam1 + gam1 - phi1))
+
+h2 = v2 * soi * abs(np.sin(eps2))
+E = v2 ** 2 / 2 - mu_m / soi
+p = h2 ** 2 / mu_m
+e = np.sqrt(1 + 2 * E * h2 ** 2 / mu_m ** 2)
+a2 = -mu_m/(2*E)
+e2 = e
+
+theta2 = np.pi - np.arccos((1/e2)*(h2**2/(mu_m*soi) - 1))
+asm = np.pi*2 - np.arccos(-1/e)
+
+# perilune conditions
+rp = p / (1 + e)
+vp = h2 / rp
+
+# orbit geometry
+r, t, _, _ = func.perifocal_coords(a0, e0, np.linspace(0, np.pi*2, 10000))
+
+t += gam1 + np.pi - theta
+x = r*np.cos(t)
+y = r*np.sin(t)
+plt.plot(x, y)
+
+# flyby geometry
+r, t, _, _ = func.perifocal_coords(a2, e2)
+print(360 - np.rad2deg(theta2))
+print(360 - np.rad2deg(asm))
+
+t += np.pi - theta2 - lam1
+x = r*np.cos(t)
+y = r*np.sin(t)
+plt.plot(x - ra, y)
+
+# patch point coords
+xpp = -r1*np.cos(gam1)
+ypp = -r1*np.sin(gam1)
+
+# plot a bunch of geometry
+plt.plot([0, -ra], [0, 0], 'k', linewidth=0.5)
+plt.plot([0, xpp], [0, ypp], 'k', linewidth=0.5)
+plt.plot([-ra, xpp], [0, ypp], 'k', linewidth=0.5)
+
+# plot velocity vectors
+v1_vec = np.array([-v1*np.sin(phi1 - gam1), -v1*np.cos(phi1 - gam1)])
+vm_vec = np.array([0, vm])
+v2_vec = v1_vec + vm_vec
+
+plt.plot([xpp, xpp + vm_vec[0]*100e3], [ypp, ypp + vm_vec[1]*100e3])
+plt.plot([xpp, xpp + v1_vec[0]*100e3], [ypp, ypp + v1_vec[1]*100e3])
+plt.plot([xpp, xpp + v2_vec[0]*100e3], [ypp, ypp + v2_vec[1]*100e3])
+
+# plot planets/SOIs
+circle(cns.re, 0, 0, 'k')
+circle(1737e3, -ra, 0, 'k')
+circle(soi, -ra, 0, 'k--')
+plt.axis('equal')
+plt.show()
