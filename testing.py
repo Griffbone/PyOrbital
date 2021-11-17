@@ -70,12 +70,13 @@ a0 = -cns.mu/(2*E0)
 e0 = np.sqrt(1 + 2*E0*h0**2/cns.mu**2)
 
 # Patch point
-lam1 = np.deg2rad(35)
+lam1 = np.deg2rad(37.25)
+# lam1 = np.deg2rad(30)
 r1 = np.sqrt(soi ** 2 + ra ** 2 - 2 * soi * ra * np.cos(lam1))
 v1 = np.sqrt(2*(E0 + cns.mu/r1))
 
 gam1 = np.arcsin((soi/r1) * np.sin(lam1))
-theta = np.arccos((1/e0)*(h0**2/(cns.mu*r1) - 1))
+ta1 = np.arccos((1/e0)*(h0**2/(cns.mu*r1) - 1))
 phi1 = np.arccos(h0 / (r1 * v1))
 
 # selenocentric orbit
@@ -90,8 +91,7 @@ e = np.sqrt(1 + 2 * E * h2 ** 2 / mu_m ** 2)
 a2 = -mu_m/(2*E)
 e2 = e
 
-theta2 = np.pi - np.arccos((1/e2)*(h2**2/(mu_m*soi) - 1))
-asm = np.pi*2 - np.arccos(-1/e)
+ta2 = 2*np.pi - np.arccos((1/e2)*(h2**2/(mu_m*soi) - 1))
 
 # perilune conditions
 rp = p / (1 + e)
@@ -100,17 +100,21 @@ vp = h2 / rp
 # orbit geometry
 r, t, _, _ = func.perifocal_coords(a0, e0, np.linspace(0, np.pi*2, 10000))
 
-t += gam1 + np.pi - theta
+t += gam1 + np.pi - ta1
 x = r*np.cos(t)
 y = r*np.sin(t)
 plt.plot(x, y)
 
 # flyby geometry
-r, t, _, _ = func.perifocal_coords(a2, e2)
-print(360 - np.rad2deg(theta2))
-print(360 - np.rad2deg(asm))
+r, t, _, _ = func.perifocal_coords(a2, e2, np.linspace(ta2 - 2*np.pi, 2*np.pi - ta2, 1000))
 
-t += np.pi - theta2 - lam1
+if eps2 > 0:
+    t += - ta2 - lam1
+else:
+    t += ta2 - lam1
+
+theta = ta2 - np.pi
+
 x = r*np.cos(t)
 y = r*np.sin(t)
 plt.plot(x - ra, y)
@@ -123,15 +127,64 @@ ypp = -r1*np.sin(gam1)
 plt.plot([0, -ra], [0, 0], 'k', linewidth=0.5)
 plt.plot([0, xpp], [0, ypp], 'k', linewidth=0.5)
 plt.plot([-ra, xpp], [0, ypp], 'k', linewidth=0.5)
+plt.plot([-ra - soi*np.cos(lam1 + theta), soi*np.cos(lam1 + theta) - ra], [soi*np.sin(lam1 + theta), -soi*np.sin(lam1 + theta)], 'k--', linewidth=0.5)
+
 
 # plot velocity vectors
 v1_vec = np.array([-v1*np.sin(phi1 - gam1), -v1*np.cos(phi1 - gam1)])
 vm_vec = np.array([0, vm])
 v2_vec = v1_vec + vm_vec
 
-plt.plot([xpp, xpp + vm_vec[0]*100e3], [ypp, ypp + vm_vec[1]*100e3])
-plt.plot([xpp, xpp + v1_vec[0]*100e3], [ypp, ypp + v1_vec[1]*100e3])
-plt.plot([xpp, xpp + v2_vec[0]*100e3], [ypp, ypp + v2_vec[1]*100e3])
+mult = 25e3
+plt.plot([xpp, xpp + vm_vec[0]*mult], [ypp, ypp + vm_vec[1]*mult], 'go-', ms=3, markevery=[-1])
+plt.plot([xpp, xpp + v1_vec[0]*mult], [ypp, ypp + v1_vec[1]*mult], 'bo-', ms=3, markevery=[-1])
+plt.plot([xpp, xpp + v2_vec[0]*mult], [ypp, ypp + v2_vec[1]*mult], 'ro-', ms=3, markevery=[-1])
+
+
+
+
+
+
+
+
+
+# tof = func.t_between(a2, e2, ta2, 2*np.pi - ta2, mu_m)
+# print(tof)
+
+nu1 = ta2
+nu2 = 2*np.pi - nu1
+
+F = np.arctanh(np.sqrt((e - 1)/(e + 1))*np.tan(nu2/2))*2
+M = e*np.sinh(F) - F
+tof = ((h2**3/mu_m**2)/(e**2 - 1)**(3/2))*M*2
+
+dm_theta = 2*np.pi*(tof/func.period(ra, cns.mu))
+print(np.rad2deg(dm_theta))
+
+# exit geometry
+angle = np.pi - lam1 - 2*theta
+xpp2 = -ra - soi*np.cos(angle)
+ypp2 = -soi*np.sin(angle)
+
+v2_vec = np.array([-v2*np.cos(angle + eps2), -v2*np.sin(angle + eps2)])
+v3_vec = v2_vec - vm_vec
+
+plt.plot([-ra, xpp2], [0, ypp2], 'k', linewidth=0.5)
+plt.plot([0, -ra*np.cos(dm_theta)], [0, -ra*np.sin(dm_theta)], 'k', linewidth=0.5)
+
+plt.plot([xpp2, xpp2 + v2_vec[0]*mult], [ypp2, ypp2 + v2_vec[1]*mult], 'ro-', ms=3, markevery=[-1])
+plt.plot([xpp2, xpp2 - vm_vec[0]*mult], [ypp2, ypp2 - vm_vec[1]*mult], 'go-', ms=3, markevery=[-1])
+plt.plot([xpp2, xpp2 + v3_vec[0]*mult], [ypp2, ypp2 + v3_vec[1]*mult], 'bo-', ms=3, markevery=[-1])
+
+
+
+
+
+
+
+
+
+
 
 # plot planets/SOIs
 circle(cns.re, 0, 0, 'k')
