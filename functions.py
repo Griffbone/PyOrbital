@@ -416,8 +416,8 @@ def vector_to_elements(r, v, mu):
     # semimajor axis
     a = 1/(2/r - v**2/mu)
 
-    if e > 1:
-        a = -a
+    # if e > 1:
+    #     a = -a
 
     return a, e, np.degrees(i), np.degrees(lan), np.degrees(w), np.degrees(ta)
 
