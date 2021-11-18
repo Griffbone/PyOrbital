@@ -85,6 +85,9 @@ vm = np.sqrt(cns.mu / ra)
 v2 = np.sqrt(v1 ** 2 + vm ** 2 - 2 * v1 * vm * np.cos(phi1 - gam1))
 eps2 = np.arcsin((vm / v2) * np.cos(lam1) - (v1 / v2) * np.cos(lam1 + gam1 - phi1))
 
+print(v1)
+print(v2)
+
 h2 = v2 * soi * abs(np.sin(eps2))
 E = v2 ** 2 / 2 - mu_m / soi
 p = h2 ** 2 / mu_m

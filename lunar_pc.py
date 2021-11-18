@@ -12,6 +12,17 @@ def circle(r, cx, cy, style):
     plt.plot(xs, ys, style)
 
 
+def vector(cx, cy, vec, scale=1, style='ko-'):
+    plt.plot([cx, cx + vec[0]*scale], [cy, cy + vec[1]*scale], style, ms=3, markevery=[-1])
+
+
+def cross2d(v1, v2):
+    v1 = np.array([v1[0], v1[1], 0])
+    v2 = np.array([v2[0], v2[1], 0])
+
+    return np.linalg.norm(np.cross(v1, v2))
+
+
 class body:
     def __init__(self, r, mu, soi, a):
         """ Initialize body class
@@ -61,34 +72,20 @@ e0 = np.sqrt(1 + 2*E0*h0**2/b1.mu**2)
 r1 = np.sqrt(b2.soi**2 + b2.a**2 - 2*b2.soi*b2.a*np.cos(lam1))
 v1 = np.sqrt(2*(E0 + b1.mu/r1))
 gam1 = np.arcsin((b2.soi/r1)*np.sin(lam1))
-ta1 = np.arccos((1/e0)*(h0**2/(b1.mu*r1) - 1))
 phi1 = np.arccos(h0/(r1*v1))
+v1_vec = np.array([-v1*np.sin(phi1 - gam1), -v1*np.cos(phi1 - gam1)])
 
-# Lunar orbit
-vm = np.sqrt(b1.mu/b2.a)
-
-v2 = np.sqrt(v1**2 + vm**2 - 2*v1*vm*np.cos(phi1 - gam1))
-eps = np.arcsin((vm/v2)*np.cos(lam1) - (v1/v2)*np.cos(lam1 + gam1 - phi1))
-
-h2 = v2*b2.soi*abs(np.sin(eps))
+# Lunar flyby
+vm_vec = np.array([0, -b1.v_circ(b2.a)])
+v2_vec = v1_vec - vm_vec
+v2 = np.linalg.norm(v2_vec)
 E2 = v2**2/2 - b2.mu/b2.soi
-p2 = h2**2/b2.mu
-e2 = np.sqrt(1 + 2*E2*h2**2/b2.mu**2)
-a2 = -b2.mu/(2*E2)
-ta2 = 2*np.pi - np.arccos((1/e2)*(h2**2/(b2.mu*b2.soi) - 1))
+h2 = cross2d(v2, )
 
-if eps > 0:
-    w2 = -ta2 - lam1
-else:
-    w2 = ta2 - lam1
+print(v1)
+print(np.linalg.norm(v2_vec))
 
-# Escape patch point
-nu1 = ta2
-nu2 = 2*np.pi - nu1
-
-F = np.arctanh(np.sqrt((e2 - 1)/(e2 + 1))*np.tan(nu2/2))*2
-M = e2*np.sinh(F) - F
-tof = ((h2**3/b2.mu**2)/(e2**2 - 1)**(3/2))*M*2
-dnu = 2*np.pi*(tof/func.period(b2.a, b1.mu))
-
-
+vector(0, 0, v1_vec, style='bo-')
+vector(0, 0, vm_vec, style='go-')
+vector(0, 0, v2_vec, style='ro-')
+plt.show()
