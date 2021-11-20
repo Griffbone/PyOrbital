@@ -230,6 +230,7 @@ def ta_change(a, e, ta1, Dt, mu):
 
 # ====================== ORBITAL REFERENCE FRAME FUNCTIONS ======================
 
+
 def perifocal_to_eci(omega, i, w, x, y):
     """" Function to transform perifocal position vector to ECI position vector
         :param omega: right ascension of ascending node (deg)
@@ -295,17 +296,21 @@ def elements_to_eci_vel(a, e, i, lan, w, ta, mu=cns.mu):
             :return vz: z component of velocity vector
         """
 
+    h = np.sqrt
+
     if e <= 1:
         h = np.sqrt(mu * a * (1 + e ** 2))
     else:
-        h = np.sqrt(mu*a*(e**2 - 1))
+        p = a*(1 - e**2)
+        h = np.sqrt(mu*p)
+
         asm = np.degrees(np.arccos(-1 / e))
 
         if asm <= wrap_to_360(ta) <= 360 - asm:
             raise ValueError('Cannot find ECI velocity at specified true anomaly; orbit is hyperbolic.')
 
-    vx = (mu / h) * (-np.sin(np.radians(ta)))
-    vy = (mu / h) * (e + np.cos(np.radians(ta)))
+    vx = (mu/h)*(-np.sin(np.radians(ta)))
+    vy = (mu/h)*(e + np.cos(np.radians(ta)))
 
     vx, vy, vz = perifocal_to_eci(lan, i, w, vx, vy)
 
@@ -330,7 +335,7 @@ def elements_to_eci_pos(a, e, i, lan, w, ta):
     if e <= 1:
         p = a*(1 - e**2)
     else:
-        p = a*(e**2 - 1)
+        p = a*(1 - e**2) #a*(e**2 - 1)
         asm = np.degrees(np.arccos(-1/e))
 
         if asm <= wrap_to_360(ta) <= 360 - asm:
@@ -394,9 +399,13 @@ def vector_to_elements(r, v, mu):
     if n == 0:
         # if orbit is in the equitorial plane, argument of periapsis is given from the equinox direction
         w = vector_angle(evec/e, np.array([1, 0, 0]))
+
+        if evec[1] < 0:
+            w = 2*np.pi - w
     elif e > 0:
         w = np.arccos(np.dot(nvec, evec)/(n*e))
-        if evec[2] < 0:
+
+        if evec[1] < 0:
             w = 2*np.pi - w
     else:
         w = 0

@@ -89,6 +89,7 @@ print(v1)
 print(v2)
 
 h2 = v2 * soi * abs(np.sin(eps2))
+# print(h2)
 E = v2 ** 2 / 2 - mu_m / soi
 p = h2 ** 2 / mu_m
 e = np.sqrt(1 + 2 * E * h2 ** 2 / mu_m ** 2)
