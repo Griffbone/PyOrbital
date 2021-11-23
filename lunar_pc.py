@@ -61,7 +61,7 @@ b2 = moon
 r0 = b1.r + 200e3
 v0 = b1.v_circ(r0) + 3150
 lam1 = np.radians(37.25)
-lam1 = np.radians(100)
+lam1 = np.radians(50)
 
 
 # Initial orbit
@@ -93,9 +93,14 @@ h2 = cross2d(r2_vec, v2_vec)
 
 a2, e2, i2, _, w2, ta2 = func.vector_to_elements(r2_vec, v2_vec, b2.mu)
 
-# w2 = 196
+# x, y, z = func.elements_to_eci_pos(a2, e2, i2, 0, w2, ta2)
+
+# print([x, y, z])
+# print(r2_vec)
+
+print([a2, e2, i2, _, w2, ta2])
+
 # Lunar escape
-print(ta2)
 ta3 = 360 - ta2
 x3, y3, _ = func.elements_to_eci_pos(a2, e2, i2, 0, w2, ta3)
 r3_vec = np.array([x3, y3, 0])
