@@ -88,34 +88,24 @@ def wrap_to_2pi(theta):
     return theta
 
 
-def rotmat(t, axis):
-    """Function to create a rotation matrix about an axis
-        :param t: angular displacement in RADIANS
-        :type t: float
-        :param axis: axis of rotation
-        :type axis: str
-    """
+def rotx(t):
+    t = np.radians(t)
+    cost = np.cos(t)
+    sint = np.sin(t)
 
-    if axis.upper() == 'X':
-        return np.array([
-            [1, 0, 0],
-            [0, np.cos(t), -np.sin(t)],
-            [0, np.sin(t), np.cos(t)]
-        ])
+    return np.array([[1, 0, 0],
+                     [0, cost, -sint],
+                     [0, sint, cost]])
 
-    elif axis.upper() == 'Y':
-        return np.array([
-            [np.cos(t), 0, np.sin(t)],
-            [0, 1, 0],
-            [-np.sin(t), 0, np.cos(t)]
-        ])
 
-    elif axis.upper() == 'Z':
-        return np.array([
-            [np.cos(t), -np.sin(t), 0],
-            [np.sin(t), np.cos(t), 0],
-            [0, 0, 1]
-        ])
+def rotz(t):
+    t = np.radians(t)
+    cost = np.cos(t)
+    sint = np.sin(t)
+
+    return np.array([[cost, -sint, 0],
+                     [sint, cost, 0],
+                     [0, 0, 1]])
 
 # ====================== ORBITAL POSITION FUNCTIONS ======================
 
@@ -293,14 +283,36 @@ def elements_to_vector(a, e, i, lan, w, ta, mu):
         :return r: position vector
         :return v: velocity vector
     """
-    pass
+
+    # Probably a good idea to add checks to determine if inputs are reasonable
+    #   hyperbolic ta not within asymptotes
+    #   LAN is zero if inclination is zero
+
+    tol = 1e-6
+
+    if not (1 - tol <= e <= 1 + tol):
+        p = a*(1 - e**2)
+    else:
+        raise ValueError("Well, You're fucked. This function cannot handle parabolic orbits")
+
+    ta = np.radians(ta)
+
+    rpf = np.array([p*np.cos(ta)/(1 + e*np.cos(ta)), p*np.sin(ta)/(1 + e*np.cos(ta)), 0])
+    vpf = np.array([-np.sqrt(mu/p)*np.sin(ta), np.sqrt(mu/p)*(e + np.cos(ta)), 0])
+
+    if i == 0:
+        rotmat = rotz(w)
+    else:
+        rotmat = rotz(-lan) @ rotx(-i) @ rotz(-w)
+
+    r = rotmat @ rpf
+    v = rotmat @ vpf
+
+    return r, v
 
 
 def vector_to_elements(rvec, vvec, mu):
     """ Function to convert position and velocity to classical orbital elements
-
-        DOUBLE CHECK TRUE ANOMALY SPECIAL CASES
-
         :param r: position vector
         :param v: velocity vector
         :param mu: gravitational parameter

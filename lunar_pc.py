@@ -51,7 +51,7 @@ class body:
         return np.sqrt(2*self.mu/r)
 
 
-earth = body(6378e3, cns.mu, 0, 0)
+earth = body(6378e3, cns.mu, 0.929e9, 0)
 moon = body(1737447.78, 4.9048695e12, 66.1e6, 384648e3)
 
 b1 = earth
@@ -59,9 +59,9 @@ b2 = moon
 
 # Inputs (2 initial, one patch point)
 r0 = b1.r + 200e3
-v0 = b1.v_circ(r0) + 3150
-lam1 = np.radians(37.25)
-lam1 = np.radians(50)
+v0 = b1.v_circ(r0) + 3130
+lam1 = np.radians(0)
+# lam1 = np.radians(46)
 
 
 # Initial orbit
@@ -91,23 +91,15 @@ v2 = np.linalg.norm(v2_vec)
 E2 = v2**2/2 - b2.mu/b2.soi
 h2 = cross2d(r2_vec, v2_vec)
 
-a2, e2, i2, _, w2, ta2 = func.vector_to_elements(r2_vec, v2_vec, b2.mu)
 
-# x, y, z = func.elements_to_eci_pos(a2, e2, i2, 0, w2, ta2)
-
-# print([x, y, z])
-# print(r2_vec)
-
-print([a2, e2, i2, _, w2, ta2])
+a2, e2, i2, lan2, w2, ta2 = func.vector_to_elements(r2_vec, v2_vec, b2.mu)
 
 # Lunar escape
 ta3 = 360 - ta2
-x3, y3, _ = func.elements_to_eci_pos(a2, e2, i2, 0, w2, ta3)
-r3_vec = np.array([x3, y3, 0])
+r3_vec, v3_vec = func.elements_to_vector(a2, e2, i2, 0, w2, ta3, b2.mu)
 r4_vec = r3_vec + rm1_vec
-vx, vy, _ = func.elements_to_eci_vel(a2, e2, 0, 0, w2, ta3, mu=b2.mu)
-v3_vec = np.array([vx, vy, 0])
 v4_vec = v3_vec + vm_vec
+a3, e3, i3, lan3, w3, ta3 = func.vector_to_elements(r4_vec, v4_vec, b1.mu)
 
 
 # plot shit
@@ -123,10 +115,18 @@ x = r*np.cos(t) + rm1_vec[0]
 y = r*np.sin(t) + rm1_vec[1]
 plt.plot(x, y)
 
+r, t, _, _ = func.perifocal_coords(a3, e3, np.linspace(0, 2*np.pi, 10000))
+t += np.radians(w3)
+x = r*np.cos(t)
+y = r*np.sin(t)
+plt.plot(x, y)
+
 scale = 25e3
 vector(r1_vec[0], r1_vec[1], v1_vec, scale, 'bo-')
 vector(r1_vec[0], r1_vec[1], v2_vec, scale, 'ro-')
 vector(r1_vec[0], r1_vec[1], -vm_vec, scale, 'go-')
+
+vector(rm1_vec[0], rm1_vec[1], r2_vec)
 
 vector(r4_vec[0], r4_vec[1], v4_vec, scale, 'bo-')
 vector(r4_vec[0], r4_vec[1], v3_vec, scale, 'ro-')
@@ -136,9 +136,11 @@ circle(b2.soi, rm1_vec[0], rm1_vec[1], 'k--')
 circle(b1.r, 0, 0, 'k')
 circle(b2.r, rm1_vec[0], rm1_vec[1], 'k')
 
+circle(b1.soi, 0, 0, 'k--')
+
 plt.axis('equal')
 plt.show()
-
+#
 
 
 
