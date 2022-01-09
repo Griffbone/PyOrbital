@@ -289,6 +289,9 @@ def elements_to_vector(a, e, i, lan, w, ta, mu):
     #   LAN is zero if inclination is zero
 
     tol = 1e-6
+    w = np.radians(w)
+    lan = np.radians(lan)
+    i = np.radians(i)
 
     if not (1 - tol <= e <= 1 + tol):
         p = a*(1 - e**2)
@@ -300,10 +303,16 @@ def elements_to_vector(a, e, i, lan, w, ta, mu):
     rpf = np.array([p*np.cos(ta)/(1 + e*np.cos(ta)), p*np.sin(ta)/(1 + e*np.cos(ta)), 0])
     vpf = np.array([-np.sqrt(mu/p)*np.sin(ta), np.sqrt(mu/p)*(e + np.cos(ta)), 0])
 
-    if i == 0:
-        rotmat = rotz(w)
-    else:
-        rotmat = rotz(-lan) @ rotx(-i) @ rotz(-w)
+    clan = np.cos(lan)
+    slan = np.sin(lan)
+    cosw = np.cos(w)
+    sinw = np.sin(w)
+    cosi = np.cos(i)
+    sini = np.sin(i)
+
+    rotmat = np.array([[clan*cosw - slan*sinw*cosi, -clan*sinw - slan*cosw*cosi, slan*sini],
+                       [slan*cosw + clan*sinw*cosi, -slan*sinw + clan*cosw*cosi, -clan*sini],
+                       [sinw*sini, cosw*sini, cosi]])
 
     r = rotmat @ rpf
     v = rotmat @ vpf
@@ -390,7 +399,7 @@ def vector_to_elements(rvec, vvec, mu):
 
         if rvec[2] < 0:
             ta = 360 - ta
-    elif e <= tol and (i == 0 or i == 180):
+    elif e <= tol and i== 0: # (i == 0 or i == 180):
         # circular equatorial orbit
         costa = rvec[0] / r
         ta = np.degrees(np.arccos(costa))

@@ -111,8 +111,8 @@ class TestFunctions(unittest.TestCase):
 
         # Retrograde circular equatorial
         rc, vc = func.elements_to_vector(6378e3, 0, 180, 0, 0, 135, mu)
-        r = 6378e3*np.array([-c45, c45, 0])
-        v = np.sqrt(mu/6378e3)*np.array([c45, c45, 0])
+        r = 6378e3*np.array([-c45, -c45, 0])
+        v = np.sqrt(mu/6378e3)*np.array([-c45, c45, 0])
 
         self.assertTrue((r - tol <= rc).all() and (rc <= r + tol).all())
         self.assertTrue((v - tol <= vc).all() and (vc <= v + tol).all())
