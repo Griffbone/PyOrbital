@@ -92,7 +92,7 @@ class TestFunctions(unittest.TestCase):
         self.assertTrue(45 - tol <= w <= 45 + tol)
         self.assertTrue(0 <= ta <= tol)
 
-        # hyperbolic
+        # hyperbolic-
 
         pass
 

@@ -332,9 +332,12 @@ def vector_to_elements(rvec, vvec, mu):
         :return lan: longitude of ascending node (deg)
         :return w: argument of periapsis (deg)
         :return ta: true anomaly (deg)
+
+        :return truelon: true longitude (deg)
+        :return arglat: argument of latitude (deg)
+        :return lonper: longitude of periapsis (deg)
     """
     tol = 1e-6
-
     r = np.linalg.norm(rvec)
     v = np.linalg.norm(vvec)
     E = v**2/2 - mu/r
@@ -348,73 +351,81 @@ def vector_to_elements(rvec, vvec, mu):
     evec = (1/mu)*((v**2 - mu/r)*rvec - np.dot(rvec, vvec)*vvec)
     e = np.linalg.norm(evec)
 
-    # Semimajor axis
-    if (e > 1 - tol) and (e < 1 + tol):
-        # Parabolic orbit case
-        a = np.inf
-    else:
-        # Elliptic/hyperbolic case
-        a = -mu/(2*E)
-
-    # Inclination
     cosi = hvec[2]/h
     i = np.degrees(np.arccos(cosi))
 
-    # LAN
-    if i == 0 or i == 180:
-        # equatorial orbit case
-        lan = 0
+    # ========== Semimajor axis ==========
+    if abs(E) > tol:
+        # Elliptical/hyperbolic orbit
+        a = -mu/(2*E)
     else:
-        # general case
-        coslan = nvec[0]/n
-        lan = np.degrees(np.arccos(coslan))
+        # Parabolic orbit
+        a = np.inf
+
+    # ========== LAN ==========
+    if n > tol:
+        # Inclined orbit case
+        lan = np.degrees(np.arccos(nvec[0]/n))
 
         if nvec[1] < 0:
             lan = 360 - lan
-
-    # Argument of periapsis
-    if e <= tol:
-        # circular orbit
-        w = 0
-    elif i == 0 or i == 180:
-        # equatorial orbit
-        cosw = evec[0]/e
-        w = np.degrees(np.arccos(cosw))
-
-        if evec[1] < 0:
-            w = 360 - w
     else:
-        # general case
-        cosw = np.dot(nvec, evec)/(n*e)
-        w = np.degrees(np.arccos(cosw))
+        # Equatorial orbit case
+        lan = np.nan
+
+    # ========== Argument of periapsis ==========
+    if (e > tol) and (i > tol):
+        # Eccentric inclined case
+        w = np.degrees(np.arccos(evec[0]/e))
 
         if evec[2] < 0:
             w = 360 - w
-
-    # True anomaly
-    if e <= tol and i != 0 and i != 180:
-        # circular inclined orbit
-        costa = np.dot(nvec, rvec)/(n*r)
-        ta = np.degrees(np.arccos(costa))
-
-        if rvec[2] < 0:
-            ta = 360 - ta
-    elif e <= tol and i== 0: # (i == 0 or i == 180):
-        # circular equatorial orbit
-        costa = rvec[0] / r
-        ta = np.degrees(np.arccos(costa))
-
-        if rvec[2] < 0:
-            ta = 360 - ta
     else:
-        # general case
-        costa = np.dot(evec, rvec)/(e*r)
-        ta = np.degrees(np.arccos(costa))
+        # Circular or non-inclined case
+        w = np.nan
+
+    # ========== True anomaly ==========
+    if e > tol:
+        # Eccentric orbit case
+        ta = np.degrees(np.arccos(np.dot(evec, rvec)/(e*r)))
 
         if np.dot(rvec, vvec) < 0:
             ta = 360 - ta
+    else:
+        # Circular orbit case
+        ta = np.nan
 
-    return a, e, i, lan, w, ta
+
+
+
+
+
+
+    # longitude of periapsis (elliptical equatorial)
+    coslonper = np.dot([1, 0, 0], evec)/e
+    lonper = np.degrees(np.arccos(coslonper))
+
+    if evec[1] < 0:
+        truelon = 360 - lonper
+
+    # argument of latitude (circular inclined)
+    if i != 0:
+        cosal = np.dot(nvec, rvec)/(n*r)
+        arglat = np.degrees(np.arccos(cosal))
+
+        if rvec[2] < 0:
+            arglat = 360 - arglat
+    else:
+        arglat = np.nan
+
+    # true longitude (circular equatorial)
+    costruelon = np.dot([1, 0, 0], rvec)/r
+    truelon = np.degrees(np.arccos(costruelon))
+
+    if rvec[1] < 0:
+        truelon = 360 - truelon
+
+    return a, e, i, lan, w, ta, truelon, arglat, lonper
 
 
 # ====================== MISCELLANEOUS ORBIT MATH ======================
