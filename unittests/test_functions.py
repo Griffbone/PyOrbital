@@ -7,92 +7,115 @@ import constants as cns
 class TestFunctions(unittest.TestCase):
     def test_vector_to_elements(self):
         c45 = np.cos(np.pi/4)
-        mu = cns.mu
+        mu = cns.mu/1000**3
         tol = 1e-6
+        re = 6378
+        vc = np.sqrt(mu/re)
 
         # Circular equatorial
-        r = 6378e3*np.array([c45, c45, 0])
-        v = np.sqrt(mu/6378e3)*np.array([-c45, c45, 0])
-        a, e, i, lan, w, ta = func.vector_to_elements(r, v, mu)
-        self.assertTrue(6378e3 - tol <= a <= 6378e3 + tol)
+        r = re*np.array([c45, c45, 0])
+        v = vc*np.array([-c45, c45, 0])
+        a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
+
+        self.assertTrue(6378 - tol <= a <= 6378 + tol)
         self.assertTrue(0 <= e <= tol)
         self.assertTrue(0 <= i <= tol)
-        self.assertTrue(0 <= lan <= tol)
-        self.assertTrue(0 <= w <= tol)
-        self.assertTrue(45 - tol <= ta <= 45 + tol)
+        self.assertTrue(np.isnan(lan))
+        self.assertTrue(np.isnan(w))
+        self.assertTrue(np.isnan(ta))
+        self.assertTrue(np.isnan(arglat))
+        self.assertTrue(45 - tol <= truelon <= 45 + tol)
+        self.assertTrue(np.isnan(lonper))
 
         # Retrograde circular equatorial
-        r = 6378e3*np.array([-c45, c45, 0])
-        v = np.sqrt(mu/6378e3)*np.array([c45, c45, 0])
-        a, e, i, lan, w, ta = func.vector_to_elements(r, v, mu)
-        self.assertTrue(6378e3 - tol <= a <= 6378e3 + tol)
+        r = re*np.array([-c45, c45, 0])
+        v = vc*np.array([c45, c45, 0])
+        a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
+
+        self.assertTrue(6378 - tol <= a <= 6378 + tol)
         self.assertTrue(0 <= e <= tol)
         self.assertTrue(180 - tol <= i <= 180 + tol)
-        self.assertTrue(0 <= lan <= tol)
-        self.assertTrue(0 <= w <= tol)
-        self.assertTrue(135 - tol <= ta <= 135 + tol)
+        self.assertTrue(np.isnan(lan))
+        self.assertTrue(np.isnan(w))
+        self.assertTrue(np.isnan(ta))
+        self.assertTrue(np.isnan(arglat))
+        self.assertTrue(225 - tol <= truelon <= 225 + tol)
+        self.assertTrue(np.isnan(lonper))
 
         # Retrograde circular at descending node
-        r = 6378e3*np.array([0, -1, 0])
-        v = np.sqrt(mu/6378e3)*np.array([-c45, 0, -c45])
-        a, e, i, lan, w, ta = func.vector_to_elements(r, v, mu)
-        self.assertTrue(6378e3 - tol <= a <= 6378e3 + tol)
+        r = re * np.array([0, -1, 0])
+        v = vc * np.array([-c45, 0, -c45])
+        a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
+
+        self.assertTrue(6378 - tol <= a <= 6378 + tol)
         self.assertTrue(0 <= e <= tol)
         self.assertTrue(135 - tol <= i <= 135 + tol)
         self.assertTrue(90 - tol <= lan <= 90 + tol)
-        self.assertTrue(0 <= w <= tol)
-        self.assertTrue(180 - tol <= ta <= 180 + tol)
+        self.assertTrue(np.isnan(w))
+        self.assertTrue(np.isnan(ta))
+        self.assertTrue(180 - tol <= arglat <= 180 + tol)
+        self.assertTrue(np.isnan(truelon))
+        self.assertTrue(np.isnan(lonper))
 
         # Circular polar
-        r = 6378e3*np.array([c45, c45, 0])
-        v = np.sqrt(mu/6378e3)*np.array([0, 0, 1])
-        a, e, i, lan, w, ta = func.vector_to_elements(r, v, mu)
-        self.assertTrue(6378e3 - tol <= a <= 6378e3 + tol)
+        r = re * np.array([0, 0, 1])
+        v = vc * np.array([c45, c45, 0])
+        a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
+
+        self.assertTrue(6378 - tol <= a <= 6378 + tol)
         self.assertTrue(0 <= e <= tol)
         self.assertTrue(90 - tol <= i <= 90 + tol)
-        self.assertTrue(45 - tol <= lan <= 45 + tol)
-        self.assertTrue(0 <= w <= tol)
-        self.assertTrue(0 <= ta <= 0 + tol)
+        self.assertTrue(225 - tol <= lan <= 225 + tol)
+        self.assertTrue(np.isnan(w))
+        self.assertTrue(np.isnan(ta))
+        self.assertTrue(90 - tol <= arglat <= 90 + tol)
+        self.assertTrue(np.isnan(truelon))
+        self.assertTrue(np.isnan(lonper))
 
         # General circular
-        r = 6378e3*np.array([-c45**2, c45**2, c45])
-        v = np.sqrt(mu/6378e3)*np.array([-c45, -c45, 0])
-        a, e, i, lan, w, ta = func.vector_to_elements(r, v, mu)
-        self.assertTrue(6378e3 - tol <= a <= 6378e3 + tol)
+        r = re * np.array([-c45**2, c45**2, c45])
+        v = vc * np.array([-c45, -c45, 0])
+        a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
+
+        self.assertTrue(6378 - tol <= a <= 6378 + tol)
         self.assertTrue(0 <= e <= tol)
         self.assertTrue(45 - tol <= i <= 45 + tol)
         self.assertTrue(45 - tol <= lan <= 45 + tol)
-        self.assertTrue(0 <= w <= tol)
-        self.assertTrue(90 - tol <= ta <= 90 + tol)
+        self.assertTrue(np.isnan(w))
+        self.assertTrue(np.isnan(ta))
+        self.assertTrue(90 - tol <= arglat <= 90 + tol)
+        self.assertTrue(np.isnan(truelon))
+        self.assertTrue(np.isnan(lonper))
 
-        # general elliptical (Vallado ex. 2-5, using lower tolerances here)
-        r = 1000*np.array([6524.834, 6862.875, 6448.296])
-        v = 1000*np.array([4.901327, 5.533756, -1.976341])
-        a, e, i, lan, w, ta = func.vector_to_elements(r, v, mu)
-        tol = 10
-        self.assertTrue(36127.343e3 - tol <= a <= 36127.343e3 + tol)
-        tol = 0.1
-        self.assertTrue(0.832853 - tol <= e <= 0.832853 + tol)
-        self.assertTrue(87.870 - tol <= i <= 87.870 + tol)
-        self.assertTrue(227.898 - tol <= lan <= 227.898 + tol)
-        self.assertTrue(53.38 - tol <= w <= 53.38 + tol)
-        self.assertTrue(92.335 - tol <= ta <= 92.335 + tol)
-        tol = 1e-6
+        # Elliptical equatorial
+        r = re * np.array([-c45, -c45, 0])
+        v = 1.2 * vc * np.array([c45, -c45, 0])
+        a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
 
-        # elliptical equatorial
+        self.assertTrue(11389.2857142 - tol <= a <= 11389.2857142 + tol)
+        self.assertTrue(0.44 - tol <= e <= 0.44 + tol)
+        self.assertTrue(0 - tol <= i <= 0 + tol)
+        self.assertTrue(np.isnan(lan))
+        self.assertTrue(np.isnan(w))
+        self.assertTrue(0 - tol <= ta <= 0 + tol)
+        self.assertTrue(np.isnan(arglat))
+        self.assertTrue(np.isnan(truelon))
+        self.assertTrue(225 - tol <= lonper <= 225 + tol)
 
-        # parabolic
-        r = 6378e3*np.array([c45, c45, 0])
-        v = np.sqrt(2*mu/6378e3)*np.array([-c45, c45, 0])
-        a, e, i, lan, w, ta = func.vector_to_elements(r, v, mu)
-        self.assertTrue(a == np.inf)
-        self.assertTrue(1 - tol <= e <= 1 + tol)
-        self.assertTrue(0 <= i <= tol)
-        self.assertTrue(0 <= lan <= tol)
-        self.assertTrue(45 - tol <= w <= 45 + tol)
-        self.assertTrue(0 <= ta <= tol)
+        # General elliptical
+        r = re * np.array([0, c45, c45])
+        v = 1.2 * vc * np.array([-1, 0, 0])
+        a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
 
-        # hyperbolic-
+        self.assertTrue(11389.2857142 - tol <= a <= 11389.2857142 + tol)
+        self.assertTrue(0.44 - tol <= e <= 0.44 + tol)
+        self.assertTrue(45 - tol <= i <= 45 + tol)
+        self.assertTrue(0 - tol <= lan <= 0 + tol)
+        self.assertTrue(90 - tol <= w <= 90 + tol)
+        self.assertTrue(0 - tol <= ta <= 0 + tol)
+        self.assertTrue(90 - tol <= arglat <= 90 + tol)
+        self.assertTrue(np.isnan(truelon))
+        self.assertTrue(np.isnan(lonper))
 
         pass
 
