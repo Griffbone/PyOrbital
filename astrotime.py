@@ -40,7 +40,6 @@ def datetime_to_jd(date):
     return jd + ut
 
 
-
 def theta_g(jdn):
     """ Function to get Greenwich sidereal time from Julian Date
         This function follows Curtis eq. 5.50

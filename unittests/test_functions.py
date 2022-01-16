@@ -117,6 +117,36 @@ class TestFunctions(unittest.TestCase):
         self.assertTrue(np.isnan(truelon))
         self.assertTrue(np.isnan(lonper))
 
+        # General parabolic
+        r = re * np.array([0, c45, c45])
+        v = np.sqrt(2) * vc * np.array([-1, 0, 0])
+        a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
+
+        self.assertTrue(a == np.inf)
+        self.assertTrue(1 - tol <= e <= 1 + tol)
+        self.assertTrue(45 - tol <= i <= 45 + tol)
+        self.assertTrue(0 - tol <= lan <= 0 + tol)
+        self.assertTrue(90 - tol <= w <= 90 + tol)
+        self.assertTrue(0 - tol <= ta <= 0 + tol)
+        self.assertTrue(90 - tol <= arglat <= 90 + tol)
+        self.assertTrue(np.isnan(truelon))
+        self.assertTrue(np.isnan(lonper))
+
+        # Radial orbit
+        r = re * np.array([0, c45, c45])
+        v = 1.2 * vc * np.array([0, c45, c45])
+        a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
+
+        self.assertTrue(np.isnan(a))
+        self.assertTrue(np.isnan(e))
+        self.assertTrue(np.isnan(i))
+        self.assertTrue(np.isnan(lan))
+        self.assertTrue(np.isnan(w))
+        self.assertTrue(np.isnan(ta))
+        self.assertTrue(np.isnan(arglat))
+        self.assertTrue(np.isnan(truelon))
+        self.assertTrue(np.isnan(lonper))
+
         pass
 
     def test_elements_to_vector(self):

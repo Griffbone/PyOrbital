@@ -1,24 +1,57 @@
 import numpy as np
-import functions as func
 import constants as cns
+import astrotime as astt
+
+a = cns.smae
+f = 1/cns.flat
+b = a*(1 - f)
 
 
-print(np.isnan(np.nan))
-# mu = cns.mu/1000**3
-# re = 6378
-# c45 = np.cos(np.radians(45))
-#
-# r = re*np.array([c45, c45, 0])
-# v = 1.2*np.sqrt(mu/re)*np.array([-c45, c45, 0])
-# a, e, i, lan, w, ta, arglat, truelon, lonper = func.vector_to_elements(r, v, mu)
-#
-# print('a    : {}'.format(a))
-# print('e    : {}'.format(e))
-# print('i    : {}'.format(np.radians(i)))
-# print('LAN  : {}'.format(np.radians(lan)))
-# print('w    : {}'.format(np.radians(w)))
-# print('ta   : {}\n'.format(np.radians(ta)))
-#
-# print('arglat   : {}'.format(np.radians(arglat)))
-# print('truelon  : {}'.format(np.radians(truelon)))
-# print('lonper   : {}'.format(np.radians(lonper)))
+404-385-3314
+404-650-5689
+
+
+def lla_to_ecef(lat, lon, alt):
+    """ Function to convert geodetic coordinates and altitude to ECEF coordinates
+        :param lat: geodetic latitude
+        :param lon: geodetic longitude
+        :param alt: altitude above ellipsoid (m)
+    """
+    e = 1/cns.flat
+    lat = np.radians(lat)
+    lon = np.radians(lon)
+
+    xp = (cns.smae / np.sqrt(1 - e**2 * np.sin(lat)**2) + alt)*np.cos(lat)
+    z = (cns.smae * (1 - e**2) / np.sqrt(1 - e**2 * np.sin(lat)**2) + alt)*np.sin(lat)
+
+    x = xp*np.cos(lon)
+    y = xp*np.sin(lon)
+
+    return x, y, z
+
+
+def lla_to_eci(lat, lon, alt, jdn):
+    """ Function to convert geodetic coordinates and altitude to ECEF coordinates
+        :param lat: geodetic latitude
+        :param lon: geodetic longitude
+        :param alt: altitude above ellipsoid (m)
+        :param jdn: Julian day number
+    """
+    e = 1/cns.flat
+    lat = np.radians(lat)
+    lon = astt.theta_g(jdn) + np.radians(lon)
+
+    xp = (cns.smae / np.sqrt(1 - e**2 * np.sin(lat)**2) + alt)*np.cos(lat)
+    z = (cns.smae * (1 - e**2) / np.sqrt(1 - e**2 * np.sin(lat)**2) + alt)*np.sin(lat)
+
+    x = xp*np.cos(lon)
+    y = xp*np.sin(lon)
+
+    return x, y, z
+
+
+jdn = astt.date_to_jd(1, 0, 2016, 6, 36, 25)
+print(np.radians(astt.theta_g_2(jdn)))
+
+
+print(lla_to_eci(0, -57.296, 6.378e3, astt.date_to_jd(1, 2, 1970, 6, 0, 0)))

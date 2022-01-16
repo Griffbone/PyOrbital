@@ -218,7 +218,14 @@ def ta_change(a, e, ta1, Dt, mu):
 
     return ta2
 
+
 # ====================== ORBITAL REFERENCE FRAME FUNCTIONS ======================
+def sez_to_ecef():
+    pass
+
+
+def sez_to_eci():
+    pass
 
 
 def perifocal_to_eci(omega, i, w, x, y):
