@@ -81,7 +81,7 @@ def get_geo_coords(r, jd):
 # 2 49220  51.6453 248.7948 0006916 327.7800 175.2734 14.97540535    73
 
 
-t0 = time.date_to_jd(16, 9, 2021, hour=11, mins=45, sec=20)
+t0 = time.date_to_jd(16, 9, 2021, 0, 0, 0)
 a = (659e3 + cons.re + 579e3 + cons.re)/2
 e = .0006916
 i = np.radians(51.6453)
@@ -95,7 +95,7 @@ t = (M/(2*np.pi))*T
 t0 -= t/3600/24
 
 
-jd = timelib.time() / 60 / 60 / 24 + time.date_to_jd(1, 1, 1970)
+jd = timelib.time() / 60 / 60 / 24 + time.date_to_jd(1, 1, 1970, 0, 0, 0)
 ts = np.linspace(t0, jd, 1000)
 
 lats = []
