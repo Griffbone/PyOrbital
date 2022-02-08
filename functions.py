@@ -4,220 +4,147 @@ import astrotime as at
 import constants as cns
 import matplotlib.pyplot as plt
 
+
 # ====================== ELEMENT SET CLASS ======================
-
-
 class Elements:
-    def __init__(self, a, e, i, lan, w, ta, mu):
-        self.a = a
-        self.e = e
-        self.i = i
-        self.lan = lan
-        self.w = w
-        self.ta = ta
-        self.mu = mu
-
-        self.ap = a*(1 + e)
-        self.pe = a*(1 - e)
-
-        self.T = period(abs(a), mu)
-        self.n = 2*np.pi/self.T
-
-    def perifocal_plot(self, n=1000):
-        _, _, x, y = perifocal_coords(self.a, self.e, np.linspace(0, 2*np.pi, n))
-        plt.plot(x, y)
-        plt.axis('equal')
-
-    def get_eci(self, ta=None):
-        if ta is None:
-            ta = self.ta
-
-        x, y, z = elements_to_eci_pos(self.a, self.e, self.i, self.lan, self.w, ta)
-
-        return x, y, z
+    pass
 
 
 # ====================== BASIC MATH FUNCTIONS ======================
-
-def vector_angle(v1, v2):
-    """ Fuction to calculate an angle between two vectors
-        :param v1: first vector
-        :param v2: second vector
-
-        :return theta: angle (rad)
-    """
-
-    dot = np.dot(v1, v2)
-    mag = np.linalg.norm(v1)*np.linalg.norm(v2)
-
-    if dot == 0:
-        theta = 0
-    else:
-        theta = np.arccos(dot/mag)
-
-    return theta
-
-
 def wrap_to_360(theta):
     """ Function to wrap an angle to [0, 360]
         :param theta: some angle (deg)
-        :return theta: wrapped angle (deg)
+        :return theta_w: wrapped angle (deg)
     """
 
-    while theta > 360:
-        theta -= 360
+    theta_w = theta % 360
 
-    while theta < 0:
-        theta += 360
-
-    return theta
+    return theta_w
 
 
 def wrap_to_2pi(theta):
     """ Function to wrap an angle to [0, 2*pi]
         :param theta: some angle (rad)
-        :return theta: wrapped angle (rad)
+        :return theta_w: wrapped angle (rad)
     """
 
-    while theta > 2*np.pi:
-        theta -= 2*np.pi
+    theta_w = theta % (2*np.pi)
 
-    while theta < 0:
-        theta += 2*np.pi
-
-    return theta
+    return theta_w
 
 
-def rotx(t):
-    t = np.radians(t)
-    cost = np.cos(t)
-    sint = np.sin(t)
+def rot_1(theta):
+    """ Function to create a counterclockwise rotation matrix about the X-axis
+        :param theta: rotation angle (rad)
+        :return rotmat: clockwise rotation matrix
+    """
 
-    return np.array([[1, 0, 0],
-                     [0, cost, -sint],
-                     [0, sint, cost]])
+    ctheta = np.cos(theta)
+    stheta = np.sin(theta)
+
+    rotmat = np.array([[1, 0, 0], [0, ctheta, stheta], [0, -stheta, ctheta]])
+
+    return rotmat
 
 
-def rotz(t):
-    t = np.radians(t)
-    cost = np.cos(t)
-    sint = np.sin(t)
+def rot_2(theta):
+    """ Function to create a counterclockwise rotation matrix about the Y-axis
+        :param theta: rotation angle (rad)
+        :return rotmat: clockwise rotation matrix
+    """
 
-    return np.array([[cost, -sint, 0],
-                     [sint, cost, 0],
-                     [0, 0, 1]])
+    ctheta = np.cos(theta)
+    stheta = np.sin(theta)
+
+    rotmat = np.array([[ctheta, 0, -stheta], [0, 1, 0], [stheta, 0, ctheta]])
+
+    return rotmat
+
+
+def rot_3(theta):
+    """ Function to create a counterclockwise rotation matrix about the Z-axis
+        :param theta: rotation angle (rad)
+        :return rotmat: clockwise rotation matrix
+    """
+
+    ctheta = np.cos(theta)
+    stheta = np.sin(theta)
+
+    rotmat = np.array([[ctheta, stheta, 0], [-stheta, ctheta, 0], [0, 0, 1]])
+
+    return rotmat
+
+
+def vec_rot_1(theta, v):
+    """ Perform a vector rotation about the X-axis.
+        Functionally the same as using a rotation matrix output from rot_1, but has slightly better performance.
+
+        :param theta: rotation angle (rad)
+        :param v: vector to rotate
+        :return vp: rotated vector
+    """
+
+    x = v[0]
+    y = v[1]
+    z = v[2]
+
+    ctheta = np.cos(theta)
+    stheta = np.sin(theta)
+
+    yp = ctheta*y + stheta*z
+    zp = -stheta*y + ctheta*z
+    vp = np.array([x, yp, zp])
+
+    return vp
+
+
+def vec_rot_2(theta, v):
+    """ Perform a vector rotation about the Y-axis.
+        Functionally the same as using a rotation matrix output from rot_2, but has slightly better performance.
+
+        :param theta: rotation angle (rad)
+        :param v: vector to rotate
+        :return vp: rotated vector
+    """
+
+    x = v[0]
+    y = v[1]
+    z = v[2]
+
+    ctheta = np.cos(theta)
+    stheta = np.sin(theta)
+
+    xp = ctheta*x - stheta*z
+    zp = stheta*x + ctheta*z
+    vp = np.array([xp, y, zp])
+
+    return vp
+
+
+def vec_rot_3(theta, v):
+    """ Perform a vector rotation about the Z-axis.
+        Functionally the same as using a rotation matrix output from rot_3, but has slightly better performance.
+
+        :param theta: rotation angle (rad)
+        :param v: vector to rotate
+        :return vp: rotated vector
+    """
+
+    x = v[0]
+    y = v[1]
+    z = v[2]
+
+    ctheta = np.cos(theta)
+    stheta = np.sin(theta)
+
+    xp = ctheta*x + stheta*y
+    yp = -stheta*x + ctheta*z
+    vp = np.array([xp, yp, z])
+
+    return vp
+
 
 # ====================== ORBITAL POSITION FUNCTIONS ======================
-
-
-def perifocal_coords(a, e, thetas=np.linspace(0, 2*np.pi, 100), margin=0.1):
-    """ Function to return perifocal polar coordinates of an orbit
-        :param a: semimajor axis
-        :param e: eccentricity
-        :param thetas: array of true anomalies (rad)
-        :param margin: margin to add to asymptotes for a hyperbolic orbit
-
-        :return rs: array of distances
-        :return thetas: array of true anomalies
-        :return xs: array of x locations
-        :return ys: array of y locations
-    """
-
-    p = a*(1 - e**2)
-    #
-    # if e > 1:
-    #     p = a*(1 - e**2)
-
-    # add some logic for hyperbolic orbits asymptotes
-
-        # asm = np.arccos(-1/e)
-        # thetas = np.linspace(-asm + abs(margin), asm - abs(margin), len(thetas))
-
-    rs = p/(1 + e*np.cos(thetas))
-
-    xs = rs*np.cos(thetas)
-    ys = rs*np.sin(thetas)
-
-    return rs, thetas, xs, ys
-
-
-def kepler_ta(e, ma):
-    """ Solve Kepler's equation for Eccentric anomaly and True Anomaly
-        :param e: eccentricity
-        :param ma: mean anomaly (deg)
-
-        :return TA: true anomaly (deg)
-    """
-
-    ma = np.radians(ma)
-
-    E = fsolve(lambda E: E - e*np.sin(E) - ma, np.array([0]))
-
-    if len(E) > 1:
-        E = E[0]
-
-    TA = np.degrees(2*np.arctan(np.sqrt((1+e)/(1-e))*np.tan(E/2)))
-    TA = wrap_to_360(TA)
-
-    return TA[0]
-
-
-def ta_to_ma(e, ta):
-    """ Functtion to get mean anomaly from true anomaly
-        :param ta: true anomaly (deg)
-        :return ma: mean anomaly (deg)
-    """
-    ta = np.radians(ta)
-    ea = np.arctan(np.tan(ta/2)/np.sqrt((1+e)/(1-e)))*2
-    ma = wrap_to_360(np.degrees(ea - e*np.sin(ea)))
-
-    return ma
-
-
-def t_between(a, e, ta1, ta2, mu):
-    """ Function to get time between two true anomalies
-        :param ta1: first true anomaly (deg)
-        :param ta2: second true anomaly (deg)
-        :return Dt: time of flight
-    """
-
-    T = period(a, mu)
-    n = 360/T
-
-    m1 = ta_to_ma(e, ta1)
-    m2 = ta_to_ma(e, ta2)
-
-    t0 = m1/n
-    t1 = m2/n
-
-    Dt = t1 - t0
-
-    if Dt < 0:
-        Dt += T
-
-    return Dt
-
-
-def ta_change(a, e, ta1, Dt, mu):
-    """ Function to get change in true anomaly from a change in time
-        :param a: semimajor axis
-        :param e: eccentricity
-        :param ta1: original true anomaly (deg)
-        :param Dt: change in time (s)
-        :param mu: central gravitational parameter
-
-        :return ta2: second true anomaly
-    """
-    T = period(a, mu)
-    n = 360/T
-
-    m1 = ta_to_ma(e, ta1)
-    m2 = m1 + n*Dt
-
-    ta2 = kepler_ta(e, m2)
-
-    return ta2
-
 
 # ====================== ORBITAL REFERENCE FRAME FUNCTIONS ======================
 def sez_to_ecef():
@@ -228,55 +155,15 @@ def sez_to_eci():
     pass
 
 
-def perifocal_to_eci(omega, i, w, x, y):
-    """" Function to transform perifocal position vector to ECI position vector
-        :param omega: right ascension of ascending node (deg)
-        :param i: inclination (deg)
-        :param w: argument of periapsis (deg)
-        :param r: 1x3 perifocal position vector
-
-        :return r_eci: position vector in the ECI frame
-    """
-
-    Z1 = rotmat(np.radians(omega), 'z')
-    X1 = rotmat(np.radians(i), 'x')
-    Z2 = rotmat(np.radians(w), 'z')
-
-    r = np.array([x, y, 0])
-
-    R = Z1 @ X1 @ Z2
-    r_eci = R @ r
-
-    return r_eci[0], r_eci[1], r_eci[2]
+def perifocal_to_eci():
+    pass
 
 
-def eci_to_lla(x, y, z, jdn):
-    """ Function to convert ECI coordinates to lat/lon
-        ASSUMES SPHERICAL EARTH (for now)
-
-        :param x: ECI x position (m)
-        :param y: ECI y position (m)
-        :param z: ECI z position (m)
-        :param jdn: julian day number
-
-        :return phi: latitude (deg)
-        :return lam: longitude (deg)
-        :return a: altitude (m)
-    """
-
-    r = np.sqrt(x**2 + y**2 + z**2)
-    phi = np.arcsin(z/r)
-
-    lam = (np.degrees(np.arctan2(y, x)) - at.theta_g(jdn))
-    lam = wrap_to_360(lam)
-
-    a = r - cns.re
-
-    return np.degrees(phi), lam, a
+def eci_to_lla():
+    pass
 
 
 # ====================== ORBITAL ELEMENT CONVERSION ======================
-
 def elements_to_vector(a, e, i, lan, w, ta, truelon, arglat, lonper, mu):
     """ Function to convert orbital elements to position and velocity
         :param a: semimajor axis
@@ -440,7 +327,6 @@ def vector_to_elements(rvec, vvec, mu):
 
 
 # ====================== MISCELLANEOUS ORBIT MATH ======================
-
 def period(a, mu):
     """ Function to get orbital period from semimajor axis
         :param a: semimajor axis (m)
