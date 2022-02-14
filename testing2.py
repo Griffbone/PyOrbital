@@ -1,7 +1,8 @@
-import numpy as np
-from math import factorial
-import time
-import functions as func
-import constants as cns
+import astrotime as ast
 
-print(func.wrap_to_360(-360*10 - 45))
+jdn, ut = ast.date_to_jd(2016, 12, 0, 0, 0, 0)
+
+print(ast.gmst(jdn))
+
+
+

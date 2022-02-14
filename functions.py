@@ -1,8 +1,4 @@
 import numpy as np
-from scipy.optimize import fsolve
-import astrotime as at
-import constants as cns
-import matplotlib.pyplot as plt
 
 
 # ====================== ELEMENT SET CLASS ======================
