@@ -1,3 +1,5 @@
+import constants as cns
+
 def date_to_jd(day, month, year, h, m, s):
     """ Function to calculate Julian day number from Gregorian Calendar date
         Follows Curtis Eq. 5.48
@@ -15,6 +17,17 @@ def date_to_jd(day, month, year, h, m, s):
     jdn = jd + ut
 
     return jdn
+
+
+def j2000_cents(jd):
+    """ Function to calculate Julian centuries elapsed since J2000
+        :param jd: Julian date
+
+        :return T: centuries since J2000 epoch
+    """
+
+    T = (jd - cns.j2000)/36525
+    return T
 
 
 def gmst(jdn):
