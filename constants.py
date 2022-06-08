@@ -1,7 +1,15 @@
-# (1) https://ssd.jpl.nasa.gov/astro_par.html
-# (2) https://ssd.jpl.nasa.gov/doc/Park.2021.AJ.DE440.pdf
-# (3) https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
-# (4) https://confluence.qps.nl/qinsy/latest/en/world-geodetic-system-1984-wgs84-182618391.html
+"""
+    Astrodynamic constants.
+    Author      : Griffin Jourda
+    Date        : 2/16/22
+    Last Edited : 2/16/22
+
+    References
+        (1) https://ssd.jpl.nasa.gov/astro_par.html
+        (2) https://ssd.jpl.nasa.gov/doc/Park.2021.AJ.DE440.pdf
+        (3) https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
+        (4) https://confluence.qps.nl/qinsy/latest/en/world-geodetic-system-1984-wgs84-182618391.html
+"""
 
 G = 6.67430e-11         # universal gravitational constant - m**3/kg/s**2       (1)
 au = 149597870700       # one AU - m                                            (1)
