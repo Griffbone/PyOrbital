@@ -48,6 +48,17 @@ def date_to_jd(year, month, day, h, m, s):
     return jdn, jd_frac
 
 
+def j2000_cents(jd):
+    """ Calculate centuries elapsed since J2000 epoch from Julian date
+
+        :param jd: Julian date
+        :return T: Centuries since J2000 epoch
+    """
+
+    T = (jd - cns.j2000)/36525
+    return T
+
+
 def jd_to_gmst(jd_ut1):
     """ Calculate Greenwich mean sidereal time from UT1 Julian date.
         Function follows Vallado Algorithm 15. Valid for years 1901 to 2199.
