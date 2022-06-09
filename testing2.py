@@ -1,8 +1,14 @@
 import astrotime as ast
+import functions as func
+import numpy as np
 
-jdn, ut = ast.date_to_jd(2016, 12, 0, 0, 0, 0)
+year = 2022
+month = 2
+day = 11    # day after the 10th
+hour = 0    # 17:00 MST = 24:00 UTC
+min = 35
 
-print(ast.gmst(jdn))
+[jdn, jdf] = ast.date_to_jd(year, month, day, hour, min, 0)
 
-
-
+print(jdn)
+print(jdf)
