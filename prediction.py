@@ -2,6 +2,7 @@ import numpy as np
 import constants as cns
 import matplotlib.pyplot as plt
 from plotting import plot_circle
+from math import factorial
 
 
 # ====================== Helper Functions ======================
@@ -12,8 +13,10 @@ def stumpff_c(z):
     """
     if z < 0:
         c = (1 - np.cosh(np.sqrt(-z)))/z
-    else:
+    elif z > 0:
         c = (1 - np.cos(np.sqrt(z)))/z
+    else:
+        c = 1/2
 
     return c
 
@@ -25,8 +28,32 @@ def stumpff_s(z):
     """
     if z < 0:
         s = (np.sinh(np.sqrt(-z)) - np.sqrt(-z))/np.sqrt((-z)**3)
-    else:
+    elif z > 0:
         s = (np.sqrt(z) - np.sin(np.sqrt(z)))/np.sqrt(z**3)
+    else:
+        s = 1/6
+
+    return s
+
+
+def stumpff_c_prime(z):
+    c = 0
+    n = 0
+
+    while n <= 50:
+        c += ((-1)**(n+1))*(n+1)*(z**n)/factorial(2*n + 4)
+        n += 1
+
+    return c
+
+
+def stumpff_s_prime(z):
+    s = 0
+    n = 0
+
+    while n <= 50:
+        s += ((-1)**(n+1))*(n+1)*(z**n)/factorial(2*n + 5)
+        n += 1
 
     return s
 
