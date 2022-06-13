@@ -1,6 +1,13 @@
+import numpy
+
 import astrotime as at
 import functions as func
 import constants as cns
+import numpy as np
+import prediction as pred
+import matplotlib.pyplot as plt
+import gauss
+import propagators
 
 
 class planetary_ephem:
@@ -42,9 +49,21 @@ class planetary_ephem:
 
         return r, v
 
+    def get_state_array(self, jd_ets):
+        rs = np.empty((0, 3))
+        vs = np.empty((0, 3))
+
+        for jd in jd_ets:
+            a, e, i, Omega, w, ta = self.get_coes(jd)
+            r, v = func.elements_to_vector(a, e, i, Omega, w, ta, None, None, None, cns.mu_sun)
+            rs = np.vstack([rs, r])
+            vs = np.vstack([vs, v])
+
+        return rs, vs
+
 
 # http://vadimchazov.narod.ru/text_pdf/XSChap8.pdf Table 8.10.2
-# a, e, i, L, wbar, Omega
+# https://ssd.jpl.nasa.gov/planets/approx_pos.html
 mercury = planetary_ephem([0.38709927, 0.20563593, 7.00497902, 252.25032350, 77.45779628, 48.33076593],
                           [0.00000037, 0.00001906, -0.00594749, 149472.67411175, 0.16047689, -0.12534081])
 venus = planetary_ephem([0.72333566, 0.00677672, 3.39467605, 181.97909950, 131.60246718, 76.67984255],
@@ -54,8 +73,39 @@ earth = planetary_ephem([1.00000261, 0.01671123, -0.00001531, 100.46457166, 102.
 mars = planetary_ephem([1.52371034, 0.09339410, 1.84969142, -4.55343205, -23.94362959, 49.55953891],
                        [0.00001847, 0.00007882, -0.00813131, 19140.30268499, 0.44441088, -0.29257343])
 
-jdn, jdf = at.date_to_jd(2003, 8, 27, 12, 0, 0)
 
-r, v = earth.get_pos(jdn + jdf)
-print(r)
-print(v/1000)
+def viz_system(jds, ephems):
+    """ Function to visualize the solar system
+    """
+
+    for body in ephems:
+        rs, _ = body.get_state_array(jds)
+        plt.plot(rs[:, 0], rs[:, 1])
+        plt.scatter([rs[0][0]], [rs[0][1]], marker='x')
+        plt.scatter([rs[-1][0]], [rs[-1][1]], marker='o')
+
+    plt.scatter([0], [0], color='y', marker='*')
+    plt.axis('equal')
+
+
+tof = 150
+jdn, jdf = at.date_to_jd(2022, 6, 1, 0, 0, 0)
+tspan = np.linspace(jdn + jdf, jdn + jdf + tof)
+
+r0, v0 = earth.get_pos(jdn + jdf)
+r1, _ = mars.get_pos(jdn + jdf + tof)
+viz_system(tspan, [earth, mars])
+
+v1, v2 = gauss.lambert_uv(r0, r1, tof*24*60**2, cns.mu_sun, 2)
+
+ts = np.linspace(0, tof*24*60**2, 1000)
+xs = []
+ys = []
+for t in ts:
+    r, _ = pred.f_g_state(r0, v1, cns.mu_sun, t)
+    xs.append(r[0])
+    ys.append(r[1])
+
+print(np.linalg.norm(v1 - v0))
+plt.plot(xs, ys)
+plt.show()

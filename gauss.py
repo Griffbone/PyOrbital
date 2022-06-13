@@ -108,7 +108,3 @@ def lambert_uv(r1, r2, tof, mu, dir=1):
     v2 = (gdot*r2 - r1)/g
 
     return v1, v2
-
-
-v1, v2 = lambert_uv(np.array([0, cns.re, 0]), np.array([cns.re, 0, 0]), 1500/1500, cns.mu, 1)
-print(v1)

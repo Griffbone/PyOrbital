@@ -7,7 +7,7 @@ import functions as func
 # IITB propagators: https://www.aero.iitb.ac.in/satelliteWiki/index.php/Orbit_Propagator
 
 
-def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False):
+def kepler_propagation(a, e, i, lan, w, ta, dt, mu, n=1000, j2=False):
     """ Function to propagate an orbit using Kepler's equation
         :param a: semimajor axis (m)
         :param e: eccentricity
@@ -20,7 +20,7 @@ def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False):
     """
 
     ts = np.linspace(0, dt, n)
-    n = np.sqrt(cons.mu/a**3)
+    n = np.sqrt(mu/a**3)
 
     xs = []
     ys = []
@@ -48,7 +48,10 @@ def kepler_propagation(a, e, i, lan, w, ta, dt, n=1000, j2=False):
 
         ta = func.kepler_ta(e, np.degrees(ma))
 
-        x, y, z = func.elements_to_eci_pos(a, e, i, lan, w, ta)
+        r, _ = func.elements_to_vector(a, e, i, lan, w, ta, None, None, None, mu)
+        x = r[0]
+        y = r[1]
+        z = r[2]
 
         xs.append(x)
         ys.append(y)

@@ -58,7 +58,7 @@ def stumpff_s_prime(z):
     return s
 
 
-def solve_uv(r, v, mu, tof, tol=1e-9):
+def solve_uv(r, v, mu, tof, tol=1e-6):
     """ Function to solve for the universal variable chi from time of flight
         :param r: position vector
         :param v: velocity vector
