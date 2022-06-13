@@ -2,6 +2,21 @@ import numpy as np
 import functions as func
 
 
+def plot_circle(r, n=1000):
+    """ Function to get coordinates of the boundary of a circle
+        :param r: radius
+        :param n: number of points
+
+        :return x: x coordinates of boundary
+        :return y: y coordinates of boundary
+    """
+    t = np.linspace(0, 2*np.pi, 1000)
+    x = r*np.cos(t)
+    y = r*np.sin(t)
+
+    return x, y
+
+
 def plot_orbit(a, e, i, omega, w, tas=np.linspace(0, 2*np.pi, 100)):
     """ Function to plot an orbit from the orbit elements
         :param a: semimajor axis
