@@ -44,7 +44,6 @@ def lambert_pit(r1, r2, tof, mu):
     r2_norm = np.linalg.norm(r2)
 
 
-
 def lambert_uv(r1, r2, tof, mu, dir=1):
     """ Function to solve Gauss' problem via universal variables
         :param r1: initial position vector
@@ -84,7 +83,7 @@ def lambert_uv(r1, r2, tof, mu, dir=1):
 
         # Handle error of y being less than one
         if y < 1:
-            return None
+            return None, None
 
         x = np.sqrt(y/c)
         t = (1/np.sqrt(mu))*(x**3*s + A*np.sqrt(y))
@@ -96,6 +95,9 @@ def lambert_uv(r1, r2, tof, mu, dir=1):
 
         n += 1
 
+        if n >= 50:
+            return None, None
+
     c = pred.stumpff_c(z)
     s = pred.stumpff_s(z)
     y = r1_norm + r2_norm - A * (1 - z * s) / np.sqrt(c)
@@ -106,5 +108,13 @@ def lambert_uv(r1, r2, tof, mu, dir=1):
 
     v1 = (r2 - f*r1)/g
     v2 = (gdot*r2 - r1)/g
+
+    if np.cross(r1, v1)[2] < 0:
+        if dir == 1:
+            dir_n = 2
+        else:
+            dir_n = 1
+
+        v1, v2 = lambert_uv(r1, r2, tof, mu, dir_n)
 
     return v1, v2
