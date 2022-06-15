@@ -48,6 +48,51 @@ def date_to_jd(year, month, day, h, m, s):
     return jdn, jd_frac
 
 
+def jd_to_day(jd):
+    """ Function to convert Julian date to Gregorian Calendar date
+        :param jd: Julian date
+
+        :return y: year
+        :return m: month
+        :return d: day
+        :return h: hour
+        :return m: minute
+        :return s: second
+    """
+    T1900 = (jd - 2415019.5)/365.25
+    year = 1900 + int(T1900)
+    leapyrs = int((year - 1900 - 1)*0.25)
+    days = (jd - 2415019.5) - ((year - 1900)*365 + leapyrs)
+
+    lmonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+    # Check if we are actually in the previous year
+    if days < 1:
+        year = year - 1
+        leapyrs = int((year - 1900 - 1)*0.25)
+        days = (jd - 2415019.5) - ((year - 1900)*365 + leapyrs)
+
+    # Check if this year is a leap year
+    if (year % 4) == 0:
+        lmonth[1] = 29
+
+    dayofyr = int(days)
+    ndays = 0
+    month = 0
+
+    while ndays < dayofyr:
+        ndays += lmonth[month]
+        month += 1
+
+    day = dayofyr - sum(lmonth[0:month - 1])
+    tau = 24*(days - dayofyr)
+    h = int(tau)
+    m = int((tau - h)*60)
+    s = (tau - h - m/60)*3600
+
+    return year, month, day, h, m, s
+
+
 def j2000_cents(jd):
     """ Calculate centuries elapsed since J2000 epoch from Julian date
 

@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from scipy.optimize import fsolve
 import astrotime as at
@@ -141,6 +143,24 @@ def perifocal_coords(a, e, thetas=np.linspace(0, 2*np.pi, 100), margin=0.1):
     return rs, thetas, xs, ys
 
 
+def kepler_inverse(M, e, tol=1e-8):
+    """ Solver Kepler's inverse problem for eccentric anomaly
+        :param M: mean anomaly (rad)
+        :param e: eccentricity
+        :param tol: tolerance (rad)
+
+        :return E: eccentric anomaly (rad)
+    """
+    E = M - e*np.sin(M)
+    Mn = E - e*np.sin(E)
+
+    while abs(M - Mn) > tol:
+        E += (M - Mn)/(1 - e*np.cos(E))
+        Mn = E - e*np.sin(E)
+
+    return E
+
+
 def kepler_ta(e, ma):
     """ Solve Kepler's equation for Eccentric anomaly and True Anomaly
         :param e: eccentricity
@@ -228,26 +248,29 @@ def sez_to_eci():
     pass
 
 
-def perifocal_to_eci(omega, i, w, x, y):
+def perifocal_to_eci(x_pqw, y_pqw, lan, i, w):
     """" Function to transform perifocal position vector to ECI position vector
-        :param omega: right ascension of ascending node (deg)
-        :param i: inclination (deg)
-        :param w: argument of periapsis (deg)
-        :param r: 1x3 perifocal position vector
+        :param x_pqw: perifocal x-coordinate
+        :param y_pqw: perifocal y-coordinate
+        :param lan: longitude of ascending node (rad)
+        :param i: inclination (rad)
+        :param w: argument of periapsis (rad)
 
-        :return r_eci: position vector in the ECI frame
+        :return r_xyz: position vector in inertial frame
     """
+    slan = np.sin(lan)
+    clan = np.cos(lan)
+    sinw = np.sin(w)
+    cosw = np.cos(w)
+    sini = np.sin(i)
+    cosi = np.cos(i)
 
-    Z1 = rotmat(np.radians(omega), 'z')
-    X1 = rotmat(np.radians(i), 'x')
-    Z2 = rotmat(np.radians(w), 'z')
+    x_xyz = (clan*cosw - sinw*cosi*slan)*x_pqw + (-sinw*clan - slan*cosw*cosi)*y_pqw
+    y_xyz = (slan*cosw + clan*sinw*cosi)*x_pqw + (-sinw*slan + clan*cosw*cosi)*y_pqw
+    z_xyz = (sinw*sini)*x_xyz + (cosw*sini)*y_pqw
+    r_xyz = np.array([x_xyz, y_xyz, z_xyz])
 
-    r = np.array([x, y, 0])
-
-    R = Z1 @ X1 @ Z2
-    r_eci = R @ r
-
-    return r_eci[0], r_eci[1], r_eci[2]
+    return r_xyz
 
 
 def eci_to_lla(x, y, z, jdn):
