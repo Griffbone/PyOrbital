@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import constants as cns
 import plotting as aplt
 import functions as func
+import prediction as pred
+import propagators
 
 
 def stumpff_c_prime(z):
@@ -28,20 +30,6 @@ def stumpff_s_prime(z):
         n += 1
 
     return s
-
-
-def lambert_pit(r1, r2, tof, mu):
-    """ Function to solve Lambert's problem via P-iteration (BMW)
-        :param r1: initial position vector
-        :param r2: final position vector
-        :param tof: time of flight
-        :param mu: gravitational parameter
-
-        :return v1: initial velocity
-        :return v2: final velocity
-    """
-    r1_norm = np.linalg.norm(r1)
-    r2_norm = np.linalg.norm(r2)
 
 
 def lambert_uv(r1, r2, tof, mu, dir=1):
@@ -118,3 +106,54 @@ def lambert_uv(r1, r2, tof, mu, dir=1):
         v1, v2 = lambert_uv(r1, r2, tof, mu, dir_n)
 
     return v1, v2
+
+
+def lambert_mine(r1, r2, mu, tm=1):
+    """
+        :param r1: initial position
+        :param r2: final position
+        :param mu: gravitational parameter
+        :param tm: transfer method (1 = short way, -1 = long way)
+
+        :return amin: minimum semimajor axis
+        :return emin: minimum eccentricity
+        :return tmin_amin: minimum transfer time
+        :return v1: initial velocity
+    """
+    r1_norm = np.linalg.norm(r1)
+    r2_norm = np.linalg.norm(r2)
+    cos_d_theta = np.dot(r1, r2)/(r1_norm*r2_norm)
+    sin_d_theta = tm*np.sqrt(1 - cos_d_theta**2)
+    c = np.sqrt(r1_norm**2 + r2_norm**2 - 2*r2_norm*r1_norm*cos_d_theta)
+    s = (r1_norm + r2_norm + c)/2
+
+    amin = s/2
+    pmin = ((r1_norm*r2_norm)/c)*(1 - cos_d_theta)
+    emin = np.sqrt(1 - (2*pmin)/s)
+
+    alpha_e = np.pi
+    beta_e = 2*np.arcsin(np.sqrt((s - c)/s))
+
+    tmin_amin = np.sqrt((amin**3)/mu)*(alpha_e + tm*(beta_e - np.sin(beta_e)))
+    v1 = np.sqrt(mu*pmin)/(r1_norm*r2_norm*sin_d_theta)*(r2 - (1 - (r2_norm/pmin)*(1 - cos_d_theta))*r1)
+
+    return amin, emin, tmin_amin, v1
+
+
+r1 = np.array([cns.re*1.2, 0, 0])
+r2 = np.array([0, cns.re*2, 0])
+amin, emin, tmin, v1 = lambert_mine(r1, r2, cns.mu, 1)
+
+tspan = np.linspace(0.1, tmin, 1000)
+rs = propagators.f_g_propagation(r1, v1, tspan, cns.mu)
+plt.plot(rs[:, 0], rs[:, 1], 'k')
+
+t2 = np.linspace(tmin, func.period(amin, cns.mu), 1000)
+rs = propagators.f_g_propagation(r1, v1, t2, cns.mu)
+plt.plot(rs[:, 0], rs[:, 1], 'k--')
+
+x, y = aplt.plot_circle(cns.re, 100)
+plt.fill(x, y, 'b', alpha=0.25)
+plt.axis('equal')
+plt.show()
+

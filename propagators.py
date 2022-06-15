@@ -2,6 +2,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import constants as cons
 import functions as func
+import prediction as pred
 
 # STK propagators: https://help.agi.com/stk/index.htm#stk/vehSat_orbitProp_choose.htm
 # IITB propagators: https://www.aero.iitb.ac.in/satelliteWiki/index.php/Orbit_Propagator
@@ -130,3 +131,19 @@ def j2_propagation(r, v, dt, n=1000, step=1e3):
     vzs = y[5, :]
 
     return t, xs, ys, zs, vxs, vys, vzs
+
+
+def f_g_propagation(r1, v1, tspan, mu):
+    """ Function to use f and g functions to propagate an orbit
+        :param r1: initial position
+        :param v1: initial velocity
+        :param tspan: array of times for propagation
+        :param mu: gravitational parameter
+    """
+    rs, _ = pred.f_g_state(r1, v1, mu, min(tspan))
+
+    for t in tspan:
+        r, v = pred.f_g_state(r1, v1, mu, t)
+        rs = np.vstack([rs, r])
+
+    return rs

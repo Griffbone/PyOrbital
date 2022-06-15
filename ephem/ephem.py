@@ -6,7 +6,7 @@ import constants as cns
 import numpy as np
 import prediction as pred
 import matplotlib.pyplot as plt
-import gauss
+import lambert
 import propagators
 import plotting as aplt
 
@@ -124,7 +124,7 @@ def transfer(src, dest, jd0, jdf):
     rs, vs = src.get_pos(jd0)
     rd, vd = dest.get_pos(jdf)
 
-    v1, v2 = gauss.lambert_uv(rs, rd, (jdf - jd0)*24*60*60, cns.mu_sun)
+    v1, v2 = lambert.lambert_uv(rs, rd, (jdf - jd0) * 24 * 60 * 60, cns.mu_sun)
 
     if v1 is None or v2 is None:
         vinf_1 = np.nan
@@ -188,13 +188,3 @@ def viz_transfer(r1, v1, tof):
         ys.append(r[1])
 
     plt.plot(xs, ys, 'k')
-
-
-jd0, _ = at.date_to_jd(1998, 11, 29, 0, 0, 0)
-# jdf = jd0 + 365
-jdf, _ = at.date_to_jd(2022, 6, 15, 0, 0, 0)
-tspan = np.linspace(jd0, jdf, 10000)
-print(at.jd_to_day(jdf))
-
-viz_system(tspan, [mercury, venus, earth, mars, jupiter, saturn, uranus, neptune], True)
-plt.show()
